@@ -6,7 +6,7 @@
     "bower_components",
     "output"
   ],
-  "license": "MPL2",
+  "license": "MPL-2.0",
   "repository": {
     "type": "git",
     "url": "git://github.com/labordynamicsinstitute/purescript-metajelo.git"
