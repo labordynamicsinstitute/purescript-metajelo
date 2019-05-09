@@ -1,7 +1,12 @@
 # purescript-metajelo
-DOM-based parsing tools and types to for Metajelo XML
+DOM-based parsing tools and types for
+[metajelo](https://github.com/labordynamicsinstitute/metajelo) XML
 
-# Usage
+# Documentation
+
+API docs are available [on Pursuit](https://pursuit.purescript.org/packages/purescript-metajelo).
+
+# Buidling
 
 ## Docker
 
