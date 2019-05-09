@@ -7,10 +7,10 @@ DOM-based parsing tools and types to for Metajelo XML
 
 * First build the image: `./build-docker.sh`
 
-* Run `./psc.sh <command>`, e.g. `./psc.sh pulp --psc-package build`. This will run
+* Run a command , e.g. `./psc.sh npm run build`. This will run `npm run build`
 the command in the container with the CWD mounted and then exit. Alternatively
-if you want to issue multiple commands in the container quickly, you can
-run `./psc.sh bash`.
+if you want to issue multiple commands in the container quickly, you can run
+`./psc.sh bash`.
 
 ## Shell environment
 
