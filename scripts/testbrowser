@@ -1,4 +1,4 @@
 #!/usr/bin/env sh
 
 pulp build --main "Test.Main" --src-path "src" -I "test" -- --censor-lib && \
-parcel --no-hmr --public-url ./ build -d testdist test/index.html
+parcel build --public-url ./ -d testdist test/index.html
