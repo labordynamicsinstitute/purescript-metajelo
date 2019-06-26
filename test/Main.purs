@@ -30,13 +30,16 @@ import Metajelo.Types                    as MJ
 import Metajelo.XPaths                   as MXP
 
 parseMetajeloDoc :: DOMParser -> Effect Document
-parseMetajeloDoc dp = parseXMLFromString TD.metajeloXml dp
+parseMetajeloDoc dp = unsafePartial $ map fromRight $
+  parseXMLFromString TD.metajeloXml dp
 
 parseMetajeloPfxDoc :: DOMParser -> Effect Document
-parseMetajeloPfxDoc dp = parseXMLFromString TD.metajeloXmlPrefixed dp
+parseMetajeloPfxDoc dp = unsafePartial $ map fromRight $
+  parseXMLFromString TD.metajeloXmlPrefixed dp
 
 parseRecXmlnsFakeXmlDoc :: DOMParser -> Effect Document
-parseRecXmlnsFakeXmlDoc dp = parseXMLFromString TD.recXmlnsFakeXml dp
+parseRecXmlnsFakeXmlDoc dp = unsafePartial $ map fromRight $
+  parseXMLFromString TD.recXmlnsFakeXml dp
 
 main :: Effect Unit
 main = do

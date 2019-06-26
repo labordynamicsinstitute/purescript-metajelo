@@ -62,7 +62,6 @@ getMetajeloResolver node doc = do
 recordOfDoc :: Document -> Effect (Maybe Node)
 recordOfDoc doc = do
   recCollection <- getElementsByTagName "record" doc
-  -- FIXME: need to call  getElementsByTagNameNS on each element of metajeloNamespaces
   recordMayNoNS <- item 0 recCollection
   recordMay <- case recordMayNoNS of
     Nothing -> do
@@ -93,7 +92,10 @@ type ParseEnv = {
 getDefaultParseEnv :: String -> Effect ParseEnv
 getDefaultParseEnv xmlDocStr = do
   dp <- makeDOMParser
-  recDoc <- parseXMLFromString xmlDocStr dp
+  recDocEi <- parseXMLFromString xmlDocStr dp
+  recDoc <- case recDocEi of
+    Left er -> throw $ "XML parsing error: " <> er
+    Right doc -> pure doc
   recNodeMay <- recordOfDoc recDoc
   recNode <- case recNodeMay of
     Nothing -> throw "Could not find <record> element!"
@@ -512,7 +514,7 @@ readBoolean unknown =
 readBooleanMay :: String -> Effect (Maybe Boolean)
 readBooleanMay "" = pure Nothing
 readBooleanMay other = map Just $ readBoolean other
-  
+
 -- | Used to get a node we should be there, but still returns
 -- | an error message in the event of failure (e.g., for a bad)
 -- | XML document.
