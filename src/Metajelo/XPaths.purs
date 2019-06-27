@@ -1,6 +1,6 @@
 module Metajelo.XPaths where
 
-import Prelude (bind, join, map, not, pure, unit, (#), ($), (<>))
+import Prelude (bind, join, map, not, pure, unit, (#), ($), (<>), (>>=))
 
 import Control.Apply                     (lift2)
 import Data.Array                        (head, filter)
@@ -36,7 +36,7 @@ import Web.DOM.NodeList                  (toArray)
 import Unsafe.Coerce (unsafeCoerce)
 import Prim.TypeError (QuoteLabel, class Warn)
 
-type DocWriter t = Document -> t -> Effect Document
+type DocWriter t = t -> Document -> Effect Document
 
 metajeloNamespaces :: NonEmptyArray String
 metajeloNamespaces = NA.cons' "http://ourdomain.cornell.edu/reuse/v.01" []
@@ -157,13 +157,13 @@ readRecord env = do
     , supplementaryProducts: recProds
   }
 
-writeRecord :: Document -> MetajeloRecord -> Effect Document
-writeRecord doc0 rec = do
- doc1 <- writeIdentifier doc0 rec.identifier
- doc2 <- writeModDate doc1 rec.lastModified
- doc3 <- writeRelIdentifiers doc2 rec.relatedIdentifiers
- docLast <- writeDate doc2 rec.date
- pure docLast
+writeRecord :: DocWriter MetajeloRecord
+writeRecord rec doc0 = pure doc0 >>=
+ writeIdentifier rec.identifier >>=
+ writeDate rec.date >>=
+ writeModDate rec.lastModified >>=
+ writeRelIdentifiers rec.relatedIdentifiers >>=
+ writeSupplementaryProducts rec.supplementaryProducts
 
 readIdentifier :: ParseEnv -> Effect Identifier
 readIdentifier env = do
@@ -172,7 +172,7 @@ readIdentifier env = do
   idType <- readIdentifierType $ idTypeStr
   pure {id: recId, idType: idType}
 
-writeIdentifier :: Document -> Identifier -> Effect Document
+writeIdentifier :: DocWriter Identifier
 writeIdentifier = undefined
 
 readIdentifierType :: String -> Effect IdentifierType
@@ -236,7 +236,7 @@ readRelIdentifiers env = do
       relType <- getRelRelType nd
       pure {id: recId, idType: idType, relType: relType}
 
-writeRelIdentifiers :: Document -> NonEmptyArray RelatedIdentifier -> Effect Document
+writeRelIdentifiers :: DocWriter (NonEmptyArray RelatedIdentifier)
 writeRelIdentifiers = undefined
 
 readRelationType :: String -> Effect RelationType
@@ -296,6 +296,9 @@ readSupplementaryProducts env = do
         , resourceMetadataSource: resourceMetadataSource
         , location: location
       }
+
+writeSupplementaryProducts :: DocWriter (NonEmptyArray SupplementaryProduct)
+writeSupplementaryProducts = undefined
 
 readBasicMetadata :: ParseEnv -> Node -> Effect BasicMetadata
 readBasicMetadata env prodNode = do
