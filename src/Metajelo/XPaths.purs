@@ -1,6 +1,6 @@
 module Metajelo.XPaths where
 
-import Prelude (bind, join, map, not, pure, (#), ($), (<>))
+import Prelude (bind, join, map, not, pure, unit, (#), ($), (<>))
 
 import Control.Apply                     (lift2)
 import Data.Array                        (head, filter)
@@ -30,6 +30,13 @@ import Web.DOM.Element                   as Ele
 import Web.DOM.HTMLCollection            (item)
 import Web.DOM.Node                      (Node, childNodes, nodeName)
 import Web.DOM.NodeList                  (toArray)
+
+
+-- TODO, remove, for undefined:
+import Unsafe.Coerce (unsafeCoerce)
+import Prim.TypeError (QuoteLabel, class Warn)
+
+type DocWriter t = Document -> t -> Effect Document
 
 metajeloNamespaces :: NonEmptyArray String
 metajeloNamespaces = NA.cons' "http://ourdomain.cornell.edu/reuse/v.01" []
@@ -150,12 +157,23 @@ readRecord env = do
     , supplementaryProducts: recProds
   }
 
+writeRecord :: Document -> MetajeloRecord -> Effect Document
+writeRecord doc0 rec = do
+ doc1 <- writeIdentifier doc0 rec.identifier
+ doc2 <- writeModDate doc1 rec.lastModified
+ doc3 <- writeRelIdentifiers doc2 rec.relatedIdentifiers
+ docLast <- writeDate doc2 rec.date
+ pure docLast
+
 readIdentifier :: ParseEnv -> Effect Identifier
 readIdentifier env = do
   recId <- env.xevalRoot.str "/x:record/x:identifier"
   idTypeStr <- env.xevalRoot.str "/x:record/x:identifier/@identifierType"
   idType <- readIdentifierType $ idTypeStr
   pure {id: recId, idType: idType}
+
+writeIdentifier :: Document -> Identifier -> Effect Document
+writeIdentifier = undefined
 
 readIdentifierType :: String -> Effect IdentifierType
 readIdentifierType "ARK" = pure ARK
@@ -182,8 +200,14 @@ readIdentifierType unknown =
 readDate :: ParseEnv -> Effect XsdDate
 readDate env = env.xevalRoot.str "/x:record/x:date"
 
+writeDate :: DocWriter XsdDate
+writeDate = undefined
+
 readModDate :: ParseEnv -> Effect XsdDate
 readModDate env = env.xevalRoot.str "/x:record/x:lastModified"
+
+writeModDate :: DocWriter XsdDate
+writeModDate = undefined
 
 readRelIdentifiers :: ParseEnv -> Effect (NonEmptyArray RelatedIdentifier)
 readRelIdentifiers env = do
@@ -211,6 +235,9 @@ readRelIdentifiers env = do
       idType <- getRelIdType nd
       relType <- getRelRelType nd
       pure {id: recId, idType: idType, relType: relType}
+
+writeRelIdentifiers :: Document -> NonEmptyArray RelatedIdentifier -> Effect Document
+writeRelIdentifiers = undefined
 
 readRelationType :: String -> Effect RelationType
 readRelationType "IsCitedBy" = pure IsCitedBy
@@ -534,3 +561,6 @@ getUrl env xpath nd = do
   case URL.parsePublicURL urlStr of
     Left errMsg -> throw errMsg
     Right url -> pure url
+
+undefined :: forall a. Warn (QuoteLabel "undefined in use") => a
+undefined = unsafeCoerce unit
