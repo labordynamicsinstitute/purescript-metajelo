@@ -9,6 +9,8 @@ import Data.Array.NonEmpty               as NA
 import Data.Either                       (Either(..))
 import Data.Foldable                     (find)
 import Data.Maybe                        (Maybe(..), fromMaybe, isJust)
+import Data.Newtype                      (class Newtype)
+import Data.Semigroup                    (class Semigroup)
 import Data.String.Utils                 (startsWith)
 import Data.Traversable                  (sequence)
 import Effect                            (Effect)
@@ -35,6 +37,26 @@ import Web.DOM.NodeList                  (toArray)
 -- TODO, remove, for undefined:
 import Unsafe.Coerce (unsafeCoerce)
 import Prim.TypeError (QuoteLabel, class Warn)
+
+-- TODO: move to web-dom-xpath
+class Semigroup m <= XPathLike m where
+  pathAppend :: m -> m -> m
+  pathAppendNSx :: m -> m -> m
+  root :: m
+
+newtype XPath = XPath String
+derive instance newtypeXPath :: Newtype XPath _
+
+
+instance stringXPath :: XPathLike String where
+  pathAppend p1 p2 = p1 <> "/" <> p2
+  pathAppendNSx p1 p2 = p1 <> "/x:" <> p2
+  root = "/"
+
+infixr 5 pathAppend as //
+infixr 5 pathAppendNSx as /?
+
+-- recFromRoot = "/x:record"
 
 type DocWriter t = t -> Document -> Effect Document
 
@@ -158,7 +180,7 @@ readRecord env = do
   }
 
 writeRecord :: DocWriter MetajeloRecord
-writeRecord rec doc0 = pure doc0 >>=
+writeRecord rec doc = pure doc >>=
  writeIdentifier rec.identifier >>=
  writeDate rec.date >>=
  writeModDate rec.lastModified >>=
