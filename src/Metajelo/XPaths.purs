@@ -9,11 +9,9 @@ import Data.Array.NonEmpty               as NA
 import Data.Either                       (Either(..))
 import Data.Foldable                     (find)
 import Data.Maybe                        (Maybe(..), fromMaybe, isJust)
-import Data.Newtype                      (class Newtype)
-import Data.Semigroup                    (class Semigroup)
 import Data.String.Utils                 (startsWith)
 import Data.Traversable                  (sequence)
-import Data.XPath                        (class XPathLike, root, xx, (//), (/?))
+import Data.XPath                        (class XPathLike, root, xx, (/?))
 import Effect                            (Effect)
 import Effect.Exception                  (throw)
 
@@ -70,6 +68,12 @@ instContactP = "institutionContact"
 instSustainP :: String
 instSustainP = "institutionSustainability"
 
+instPoliciesP :: String
+instPoliciesP = "institutionPolicies"
+
+instPolicyP :: String
+instPolicyP = "institutionPolicy"
+
 versioningP :: String
 versioningP = "versioning"
 
@@ -85,6 +89,18 @@ missionUrlP = "missionStatementURL"
 fundingUrlP :: String
 fundingUrlP = "fundingStatementURL"
 
+basicMetaP :: String
+basicMetaP = "basicMetadata"
+
+titleP :: String
+titleP = "Title"
+
+creatorP :: String
+creatorP = "Creator"
+
+pubYearP :: String
+pubYearP = "PublicationYear"
+
 idTypeAP :: String
 idTypeAP = "@identifierType"
 
@@ -96,6 +112,9 @@ relTypeAP = "@relationType"
 
 instContactTypeAP :: String
 instContactTypeAP  = "@institutionContactType"
+
+resIdP :: String
+resIdP = "resourceID"
 
 recFromRootP :: String
 recFromRootP = root /? recP
@@ -118,7 +137,11 @@ relIdFromRootP = recP /? relIdP
 sProdFromRootP :: String
 sProdFromRootP = recP /? "supplementaryProducts" /? "supplementaryProduct"
 
+polTypeAP :: String
+polTypeAP = "@policyType"
 
+appliesToProdP :: String
+appliesToProdP = "@appliesToProduct"
 
 type DocWriter t = t -> Document -> Effect Document
 
@@ -390,14 +413,14 @@ readBasicMetadata env prodNode = do
   pubYear <- getPublicationYear basicMetaNode
   pure {title: title, creator: creator, publicationYear: pubYear}
   where
-    basicMetaXpath = "x:basicMetadata"
-    getTitle nd = env.xeval.str nd "x:Title"
-    getCreator nd = env.xeval.str nd "x:Creator"
-    getPublicationYear nd = env.xeval.str nd "x:PublicationYear"
+    basicMetaXpath = xx basicMetaP
+    getTitle nd = env.xeval.str nd $ xx titleP
+    getCreator nd = env.xeval.str nd $ xx creatorP
+    getPublicationYear nd = env.xeval.str nd $ xx pubYearP
 
 readResourceID :: ParseEnv -> Node -> Effect (Maybe ResourceID)
 readResourceID env prodNode = do
-  resIdres <- env.xeval.any prodNode "x:resourceID" RT.any_unordered_node_type
+  resIdres <- env.xeval.any prodNode (xx resIdP) RT.any_unordered_node_type
   resIdNodeMay <- XP.singleNodeValue resIdres
   resIdMay <- pure $ map getResId resIdNodeMay
   resIdTypeMay <- pure $ map getResIdType resIdNodeMay
@@ -571,7 +594,7 @@ readInstitutionPolicies env locNode = do
     Just narr -> pure narr
     Nothing -> throw "At least one institutionPolicy is required!"
   where
-    polsNodePath = "x:institutionPolicies/x:institutionPolicy"
+    polsNodePath = xx instPoliciesP /? instPoliciesP
     getInstPolicy :: Node -> Effect InstitutionPolicy
     getInstPolicy polNode = do
       policyChildNodeList <- childNodes polNode
@@ -593,9 +616,9 @@ readInstitutionPolicies env locNode = do
           "' as child of institutionPolicy"
         Nothing -> throw $ "unable to convert policy child Node with name '"
           <>  nodeName policyChild <> "' to an Element"
-      policyTypeStr <- env.xeval.str polNode "@policyType"
+      policyTypeStr <- env.xeval.str polNode polTypeAP
       policyType <- readPolicyType policyTypeStr
-      appliesToProdStr <- env.xeval.str polNode "@appliesToProduct"
+      appliesToProdStr <- env.xeval.str polNode appliesToProdP
       appliesToProd <- readBooleanMay appliesToProdStr
       pure {policy: policy, policyType: policyType, appliesToProduct: appliesToProd}
 
