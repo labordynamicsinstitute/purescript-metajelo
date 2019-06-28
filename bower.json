@@ -19,7 +19,8 @@
     "purescript-stringutils": "^0.0.8",
     "purescript-url-validator": "^1.1.0",
     "purescript-web-dom": "^3.0.0",
-    "purescript-web-dom-xpath": "^1.2.1"
+    "purescript-web-dom-xpath": "^1.2.1",
+    "purescript-xpath-like": "^2.0.0"
   },
   "devDependencies": {
     "purescript-debug": "^4.0.0",

@@ -13,6 +13,7 @@ import Data.Newtype                      (class Newtype)
 import Data.Semigroup                    (class Semigroup)
 import Data.String.Utils                 (startsWith)
 import Data.Traversable                  (sequence)
+import Data.XPath                        (class XPathLike, root, xx, (//), (/?))
 import Effect                            (Effect)
 import Effect.Exception                  (throw)
 
@@ -38,25 +39,86 @@ import Web.DOM.NodeList                  (toArray)
 import Unsafe.Coerce (unsafeCoerce)
 import Prim.TypeError (QuoteLabel, class Warn)
 
--- TODO: move to web-dom-xpath
-class Semigroup m <= XPathLike m where
-  pathAppend :: m -> m -> m
-  pathAppendNSx :: m -> m -> m
-  root :: m
 
-newtype XPath = XPath String
-derive instance newtypeXPath :: Newtype XPath _
+recP :: String
+recP = "record"
+
+idP :: String
+idP = "identifier"
+
+relIdP :: String
+relIdP = "relatedIdentifier"
+
+dateP :: String
+dateP = "date"
+
+lastModP :: String
+lastModP = "lastModified"
+
+instIdP :: String
+instIdP = "institutionID"
+
+instNameP :: String
+instNameP = "institutionName"
+
+instTypeP :: String
+instTypeP = "institutionType"
+
+instContactP :: String
+instContactP = "institutionContact"
+
+instSustainP :: String
+instSustainP = "institutionSustainability"
+
+versioningP :: String
+versioningP = "versioning"
+
+locP :: String
+locP = "location"
+
+superOrgNameP :: String
+superOrgNameP = "superOrganizationName"
+
+missionUrlP :: String
+missionUrlP = "missionStatementURL"
+
+fundingUrlP :: String
+fundingUrlP = "fundingStatementURL"
+
+idTypeAP :: String
+idTypeAP = "@identifierType"
+
+relIdTypeAP :: String
+relIdTypeAP  = "@relatedIdentifierType"
+
+relTypeAP :: String
+relTypeAP = "@relationType"
+
+instContactTypeAP :: String
+instContactTypeAP  = "@institutionContactType"
+
+recFromRootP :: String
+recFromRootP = root /? recP
+
+idFromRootP :: String
+idFromRootP = recFromRootP /? idP
+
+idTypeFromRootP :: String
+idTypeFromRootP = idFromRootP /? idTypeAP
+
+dateFromRootP :: String
+dateFromRootP = recP /? dateP
+
+lastModFromRootP :: String
+lastModFromRootP = recP /? lastModP
+
+relIdFromRootP :: String
+relIdFromRootP = recP /? relIdP
+
+sProdFromRootP :: String
+sProdFromRootP = recP /? "supplementaryProducts" /? "supplementaryProduct"
 
 
-instance stringXPath :: XPathLike String where
-  pathAppend p1 p2 = p1 <> "/" <> p2
-  pathAppendNSx p1 p2 = p1 <> "/x:" <> p2
-  root = "/"
-
-infixr 5 pathAppend as //
-infixr 5 pathAppendNSx as /?
-
--- recFromRoot = "/x:record"
 
 type DocWriter t = t -> Document -> Effect Document
 
@@ -90,7 +152,7 @@ getMetajeloResolver node doc = do
 
 recordOfDoc :: Document -> Effect (Maybe Node)
 recordOfDoc doc = do
-  recCollection <- getElementsByTagName "record" doc
+  recCollection <- getElementsByTagName recP doc
   recordMayNoNS <- item 0 recCollection
   recordMay <- case recordMayNoNS of
     Nothing -> do
@@ -100,7 +162,7 @@ recordOfDoc doc = do
   pure $ map Ele.toNode recordMay
   where
     getRecByNS ns = do
-      recCol <- getElementsByTagNameNS (Just ns) "record" doc
+      recCol <- getElementsByTagNameNS (Just ns) recP doc
       item 0 recCol
 
 elemXmlns :: Element -> Effect (Maybe String)
@@ -189,8 +251,8 @@ writeRecord rec doc = pure doc >>=
 
 readIdentifier :: ParseEnv -> Effect Identifier
 readIdentifier env = do
-  recId <- env.xevalRoot.str "/x:record/x:identifier"
-  idTypeStr <- env.xevalRoot.str "/x:record/x:identifier/@identifierType"
+  recId <- env.xevalRoot.str idFromRootP
+  idTypeStr <- env.xevalRoot.str idTypeFromRootP
   idType <- readIdentifierType $ idTypeStr
   pure {id: recId, idType: idType}
 
@@ -220,13 +282,13 @@ readIdentifierType unknown =
   throw $ "Unknown IdentifierType: '" <> unknown <> "'"
 
 readDate :: ParseEnv -> Effect XsdDate
-readDate env = env.xevalRoot.str "/x:record/x:date"
+readDate env = env.xevalRoot.str dateFromRootP
 
 writeDate :: DocWriter XsdDate
 writeDate = undefined
 
 readModDate :: ParseEnv -> Effect XsdDate
-readModDate env = env.xevalRoot.str "/x:record/x:lastModified"
+readModDate env = env.xevalRoot.str lastModFromRootP
 
 writeModDate :: DocWriter XsdDate
 writeModDate = undefined
@@ -234,7 +296,7 @@ writeModDate = undefined
 readRelIdentifiers :: ParseEnv -> Effect (NonEmptyArray RelatedIdentifier)
 readRelIdentifiers env = do
   idRes <- env.xevalRoot.any
-    "/x:record/x:relatedIdentifier" RT.ordered_node_snapshot_type
+    relIdFromRootP RT.ordered_node_snapshot_type
   idNodes <- XP.snapshot idRes
   relIds <- sequence $ map getRelIdentifier idNodes
   case NA.fromArray relIds of
@@ -245,11 +307,11 @@ readRelIdentifiers env = do
     getRelId nd = env.xeval.str nd "."
     getRelIdType :: Node -> Effect IdentifierType
     getRelIdType nd = do
-      idTypeStr <- env.xeval.str nd "@relatedIdentifierType"
+      idTypeStr <- env.xeval.str nd relIdTypeAP
       readIdentifierType idTypeStr
     getRelRelType :: Node -> Effect RelationType
     getRelRelType nd = do
-      idRelStr <- env.xeval.str nd "@relationType"
+      idRelStr <- env.xeval.str nd relTypeAP
       readRelationType idRelStr
     getRelIdentifier :: Node -> Effect RelatedIdentifier
     getRelIdentifier nd = do
@@ -293,9 +355,7 @@ readRelationType unknown =
 
 readSupplementaryProducts :: ParseEnv -> Effect (NonEmptyArray SupplementaryProduct)
 readSupplementaryProducts env = do
-  prodsRes <- env.xevalRoot.any
-    "/x:record/x:supplementaryProducts/x:supplementaryProduct"
-    RT.ordered_node_snapshot_type
+  prodsRes <- env.xevalRoot.any sProdFromRootP RT.ordered_node_snapshot_type
   prodNodes <- XP.snapshot prodsRes
   recProdsArr <- sequence $ map getProduct prodNodes
   case NA.fromArray recProdsArr of
@@ -410,7 +470,7 @@ readResourceMetadataSource env prodNode = do
   where
     getRelType :: Node -> Effect RelationType
     getRelType nd = do
-      relTypeStr <- env.xeval.str nd "@relationType"
+      relTypeStr <- env.xeval.str nd relTypeAP
       readRelationType relTypeStr
     combineIdBits :: Maybe (Effect URL) -> Maybe (Effect RelationType)
       -> Effect (Maybe ResourceMetadataSource)
@@ -421,7 +481,7 @@ readResourceMetadataSource env prodNode = do
 
 readInstitutionID :: ParseEnv -> Node -> Effect InstitutionID
 readInstitutionID env locNode = do
-  instIdNode <- unsafeSingleNodeValue env locNode "x:institutionID"
+  instIdNode <- unsafeSingleNodeValue env locNode $ xx instIdP
   instId <- getInstId instIdNode
   instIdType <- getInstIdType instIdNode
   pure {id: instId, idType: instIdType}
@@ -430,21 +490,21 @@ readInstitutionID env locNode = do
     getInstId nd = env.xeval.str nd "."
     getInstIdType :: Node -> Effect IdentifierType
     getInstIdType nd = do
-      idTypeStr <- env.xeval.str nd "@identifierType"
+      idTypeStr <- env.xeval.str nd idTypeAP
       readIdentifierType idTypeStr
 
 readLocation :: ParseEnv -> Node -> Effect Location
 readLocation env prodNode = do
-  locNode <- unsafeSingleNodeValue env prodNode relLocXpath
+  locNode <- unsafeSingleNodeValue env prodNode $ xx locP
   instID <- readInstitutionID env locNode
-  instName <- env.xeval.str locNode $ "x:institutionName"
-  instTypeStr <- env.xeval.str locNode $ "x:institutionType"
+  instName <- env.xeval.str locNode $ xx instNameP
+  instTypeStr <- env.xeval.str locNode $ xx instTypeP
   instType <- readInstitutionType instTypeStr
   superOrgMay <- getSuperOrg locNode
   instContact <- getInstContact locNode
   instSustain <- getInstitutionSustainability locNode
   instPolicies <- readInstitutionPolicies env locNode
-  versioningStr <- env.xeval.str locNode "x:versioning"
+  versioningStr <- env.xeval.str locNode $ xx versioningP
   versioning <- readBoolean versioningStr
   pure {
       institutionID: instID
@@ -457,19 +517,18 @@ readLocation env prodNode = do
     , versioning: versioning
   }
   where
-    relLocXpath = "x:location"
     getSuperOrg :: Node -> Effect (Maybe String)
     getSuperOrg locNode = do
       superOrgRes <- env.xeval.any
         locNode
-        ("x:superOrganizationName")
+        (xx superOrgNameP)
         RT.any_unordered_node_type
       suorOrgNodeMay <- XP.singleNodeValue superOrgRes
       sequence $ map (\nd -> env.xeval.str nd ".") suorOrgNodeMay
     getInstContact :: Node -> Effect InstitutionContact
     getInstContact locNode = do
       instContactNode <- unsafeSingleNodeValue env locNode instContactNodeName
-      contactTypeStr <- env.xeval.str instContactNode "@institutionContactType"
+      contactTypeStr <- env.xeval.str instContactNode instContactTypeAP
       contactType <- readInstitutionContactType contactTypeStr
       contactEmailStr <- env.xeval.str instContactNode "."
       contactEmail <- case validate contactEmailStr of
@@ -479,18 +538,16 @@ readLocation env prodNode = do
         Right ea -> pure ea
       pure {emailAddress: contactEmail, contactType: contactType}
       where
-        instContactNodeName = "x:institutionContact"
+        instContactNodeName = xx instContactP
     getInstitutionSustainability :: Node -> Effect InstitutionSustainability
     getInstitutionSustainability locNode = do
-      iSustainNode <- unsafeSingleNodeValue env locNode iSustainNodeName
-      msURL <- getUrl env "x:missionStatementURL" iSustainNode
-      fsURL <- getUrl env "x:fundingStatementURL" iSustainNode
+      iSustainNode <- unsafeSingleNodeValue env locNode $ xx instSustainP
+      msURL <- getUrl env (xx missionUrlP) iSustainNode
+      fsURL <- getUrl env (xx fundingUrlP) iSustainNode
       pure {
           missionStatementURL : msURL
         , fundingStatementURL : fsURL
       }
-      where
-        iSustainNodeName = "x:institutionSustainability"
 
 readInstitutionType :: String -> Effect InstitutionType
 readInstitutionType "commercial" = pure Commercial
