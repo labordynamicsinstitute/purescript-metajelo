@@ -8,6 +8,7 @@ import Data.Either                       (fromRight)
 import Data.Maybe                        (Maybe(..), fromJust, isJust)
 -- import Data.Natural                      (intToNat)
 -- import Debug.Trace                       (traceM)
+import Data.XPath                        (class XPathLike, root, xx, (/?), (//))
 import Effect                            (Effect)
 import Effect.Aff                        (Aff)
 import Effect.Class                      (liftEffect)
@@ -47,6 +48,11 @@ main = do
 
 mainTest :: Effect Unit
 mainTest = runTest do
+  suite "XPath Construction" do
+    test "institutionPolicies" do
+      expected <- pure "x:institutionPolicies/x:institutionPolicy"
+      actual <- pure $ xx MXP.instPoliciesP /? MXP.instPolicyP
+      Assert.equal expected actual
   suite "Metajelo.XPaths (with version prefix)" do
     test "Metajelo Parsing" do
       parseEnv <- liftEffect $ MXP.getDefaultParseEnv TD.metajeloXmlPrefixed

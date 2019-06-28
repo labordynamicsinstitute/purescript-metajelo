@@ -11,7 +11,7 @@ import Data.Foldable                     (find)
 import Data.Maybe                        (Maybe(..), fromMaybe, isJust)
 import Data.String.Utils                 (startsWith)
 import Data.Traversable                  (sequence)
-import Data.XPath                        (class XPathLike, root, xx, (/?))
+import Data.XPath                        (class XPathLike, root, xx, (/?), (//))
 import Effect                            (Effect)
 import Effect.Exception                  (throw)
 
@@ -101,6 +101,9 @@ creatorP = "Creator"
 pubYearP :: String
 pubYearP = "PublicationYear"
 
+resIdP :: String
+resIdP = "resourceID"
+
 idTypeAP :: String
 idTypeAP = "@identifierType"
 
@@ -113,35 +116,32 @@ relTypeAP = "@relationType"
 instContactTypeAP :: String
 instContactTypeAP  = "@institutionContactType"
 
-resIdP :: String
-resIdP = "resourceID"
-
-recFromRootP :: String
-recFromRootP = root /? recP
-
-idFromRootP :: String
-idFromRootP = recFromRootP /? idP
-
-idTypeFromRootP :: String
-idTypeFromRootP = idFromRootP /? idTypeAP
-
-dateFromRootP :: String
-dateFromRootP = recP /? dateP
-
-lastModFromRootP :: String
-lastModFromRootP = recP /? lastModP
-
-relIdFromRootP :: String
-relIdFromRootP = recP /? relIdP
-
-sProdFromRootP :: String
-sProdFromRootP = recP /? "supplementaryProducts" /? "supplementaryProduct"
-
 polTypeAP :: String
 polTypeAP = "@policyType"
 
-appliesToProdP :: String
-appliesToProdP = "@appliesToProduct"
+appliesToProdAP :: String
+appliesToProdAP = "@appliesToProduct"
+
+idTypeRootAP :: String
+idTypeRootAP = idRootP // idTypeAP
+
+recRootP :: String
+recRootP = root /? recP
+
+idRootP :: String
+idRootP = recRootP /? idP
+
+dateRootP :: String
+dateRootP = recRootP /? dateP
+
+lastModRootP :: String
+lastModRootP = recRootP /? lastModP
+
+relIdRootP :: String
+relIdRootP = recRootP /? relIdP
+
+sProdRootP :: String
+sProdRootP = recRootP /? "supplementaryProducts" /? "supplementaryProduct"
 
 type DocWriter t = t -> Document -> Effect Document
 
@@ -274,8 +274,8 @@ writeRecord rec doc = pure doc >>=
 
 readIdentifier :: ParseEnv -> Effect Identifier
 readIdentifier env = do
-  recId <- env.xevalRoot.str idFromRootP
-  idTypeStr <- env.xevalRoot.str idTypeFromRootP
+  recId <- env.xevalRoot.str idRootP
+  idTypeStr <- env.xevalRoot.str idTypeRootAP
   idType <- readIdentifierType $ idTypeStr
   pure {id: recId, idType: idType}
 
@@ -305,13 +305,13 @@ readIdentifierType unknown =
   throw $ "Unknown IdentifierType: '" <> unknown <> "'"
 
 readDate :: ParseEnv -> Effect XsdDate
-readDate env = env.xevalRoot.str dateFromRootP
+readDate env = env.xevalRoot.str dateRootP
 
 writeDate :: DocWriter XsdDate
 writeDate = undefined
 
 readModDate :: ParseEnv -> Effect XsdDate
-readModDate env = env.xevalRoot.str lastModFromRootP
+readModDate env = env.xevalRoot.str lastModRootP
 
 writeModDate :: DocWriter XsdDate
 writeModDate = undefined
@@ -319,7 +319,7 @@ writeModDate = undefined
 readRelIdentifiers :: ParseEnv -> Effect (NonEmptyArray RelatedIdentifier)
 readRelIdentifiers env = do
   idRes <- env.xevalRoot.any
-    relIdFromRootP RT.ordered_node_snapshot_type
+    relIdRootP RT.ordered_node_snapshot_type
   idNodes <- XP.snapshot idRes
   relIds <- sequence $ map getRelIdentifier idNodes
   case NA.fromArray relIds of
@@ -378,7 +378,7 @@ readRelationType unknown =
 
 readSupplementaryProducts :: ParseEnv -> Effect (NonEmptyArray SupplementaryProduct)
 readSupplementaryProducts env = do
-  prodsRes <- env.xevalRoot.any sProdFromRootP RT.ordered_node_snapshot_type
+  prodsRes <- env.xevalRoot.any sProdRootP RT.ordered_node_snapshot_type
   prodNodes <- XP.snapshot prodsRes
   recProdsArr <- sequence $ map getProduct prodNodes
   case NA.fromArray recProdsArr of
@@ -594,7 +594,7 @@ readInstitutionPolicies env locNode = do
     Just narr -> pure narr
     Nothing -> throw "At least one institutionPolicy is required!"
   where
-    polsNodePath = xx instPoliciesP /? instPoliciesP
+    polsNodePath = xx instPoliciesP /? instPolicyP
     getInstPolicy :: Node -> Effect InstitutionPolicy
     getInstPolicy polNode = do
       policyChildNodeList <- childNodes polNode
@@ -618,7 +618,7 @@ readInstitutionPolicies env locNode = do
           <>  nodeName policyChild <> "' to an Element"
       policyTypeStr <- env.xeval.str polNode polTypeAP
       policyType <- readPolicyType policyTypeStr
-      appliesToProdStr <- env.xeval.str polNode appliesToProdP
+      appliesToProdStr <- env.xeval.str polNode appliesToProdAP
       appliesToProd <- readBooleanMay appliesToProdStr
       pure {policy: policy, policyType: policyType, appliesToProduct: appliesToProd}
 
