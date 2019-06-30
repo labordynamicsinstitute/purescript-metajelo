@@ -28,7 +28,9 @@ import Web.DOM.Document.XPath.ResultType as RT
 import Web.DOM.Node                      (Node)
 
 import Metajelo.Types                    as MJ
-import Metajelo.XPaths                   as MXP
+import Metajelo.XPaths                   as MX
+import Metajelo.XPaths.Read              as MXR
+import Metajelo.XPaths.Write             as MXW
 
 parseMetajeloDoc :: DOMParser -> Effect Document
 parseMetajeloDoc dp = unsafePartial $ map fromRight $
@@ -51,12 +53,12 @@ mainTest = runTest do
   suite "XPath Construction" do
     test "institutionPolicies" do
       expected <- pure "x:institutionPolicies/x:institutionPolicy"
-      actual <- pure $ xx MXP.instPoliciesP /? MXP.instPolicyP
+      actual <- pure $ xx MX.instPoliciesP /? MX.instPolicyP
       Assert.equal expected actual
   suite "Metajelo.XPaths (with version prefix)" do
     test "Metajelo Parsing" do
-      parseEnv <- liftEffect $ MXP.getDefaultParseEnv TD.metajeloXmlPrefixed
-      record <- liftEffect $ MXP.readRecord parseEnv
+      parseEnv <- liftEffect $ MXR.getDefaultParseEnv TD.metajeloXmlPrefixed
+      record <- liftEffect $ MXR.readRecord parseEnv
       Assert.equal "identifier0" record.identifier.id
       -- Assert.equal MJ.EISSN record.identifier.idType
       -- Assert.equal "2020-04-04" record.date
@@ -66,13 +68,13 @@ mainTest = runTest do
       domParser <- liftEffect $ makeDOMParser
 
       metajeloDoc <- liftEffect $ parseRecXmlnsFakeXmlDoc domParser
-      metajeloMay :: Maybe Node <- liftEffect $ MXP.recordOfDoc metajeloDoc
+      metajeloMay :: Maybe Node <- liftEffect $ MXR.recordOfDoc metajeloDoc
       Assert.assert "found record element" (isJust metajeloMay)
       metajelo :: Node <- pure $ case metajeloMay of
         Nothing -> toNode metajeloDoc
         Just nd -> nd
 
-      mjNSresolver <- liftEffect $ MXP.getMetajeloResolver metajelo metajeloDoc
+      mjNSresolver <- liftEffect $ MX.getMetajeloResolver metajelo metajeloDoc
 
       retrievedNSMay <- pure $ XP.lookupNamespaceURI mjNSresolver "dummy"
       retrievedNS <- pure $ case retrievedNSMay of
@@ -81,12 +83,12 @@ mainTest = runTest do
 
       Assert.assertFalse
         "defaultMetajeloNS should not equal fakeXmlns or test won't work"
-        (MXP.defaultMetajeloNS == TD.fakeXmlns)
+        (MX.defaultMetajeloNS == TD.fakeXmlns)
       Assert.equal TD.fakeXmlns retrievedNS
 
     test "Metajelo Parsing" do
-      parseEnv <- liftEffect $ MXP.getDefaultParseEnv TD.metajeloXml
-      record <- liftEffect $ MXP.readRecord parseEnv
+      parseEnv <- liftEffect $ MXR.getDefaultParseEnv TD.metajeloXml
+      record <- liftEffect $ MXR.readRecord parseEnv
       Assert.equal "OjlTjf" record.identifier.id
       Assert.equal MJ.EISSN record.identifier.idType
       Assert.equal "2020-04-04" record.date
@@ -148,7 +150,7 @@ mainTest = runTest do
       metajeloDoc <- liftEffect $ parseMetajeloDoc domParser
       metajelo <- pure $ toNode metajeloDoc
 
-      mjNSresolver <- liftEffect $ MXP.getMetajeloResolver metajelo metajeloDoc
+      mjNSresolver <- liftEffect $ MX.getMetajeloResolver metajelo metajeloDoc
 
       metajeloIdRes <- liftEffect $ XP.evaluate
         "/foo:record/foo:identifier"
