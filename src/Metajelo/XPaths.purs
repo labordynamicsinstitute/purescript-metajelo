@@ -99,6 +99,9 @@ pubYearP = "PublicationYear"
 resIdP :: String
 resIdP = "resourceID"
 
+resMetaSourceP :: String
+resMetaSourceP = "resourceMetadataSource"
+
 idTypeAP :: String
 idTypeAP = "@identifierType"
 
@@ -139,6 +142,7 @@ sProdRootP :: String
 sProdRootP = recRootP /? "supplementaryProducts" /? "supplementaryProduct"
 
 
+
 metajeloNamespaces :: NonEmptyArray String
 metajeloNamespaces = NA.cons' "http://ourdomain.cornell.edu/reuse/v.01" []
 
@@ -167,4 +171,76 @@ getMetajeloResolver node doc = do
       Nothing -> defNS
       Just ns -> ns
 
+type ParseEnv = {
+  doc :: Document
+, recNode :: Node
+, xeval :: MJXpathEvals
+, xevalRoot :: MJXpathRootEvals
+}
 
+type MJXpathEvals = {
+    any     :: Node -> String -> RT.ResultType -> Effect XP.XPathResult
+  , num     :: Node -> String -> Effect Number
+  , str     :: Node -> String -> Effect String
+  , bool    :: Node -> String -> Effect Boolean
+  , nodeMay :: Node -> String -> Effect (Maybe Node)
+}
+
+type MJXpathRootEvals = {
+    any     :: String -> RT.ResultType -> Effect XP.XPathResult
+  , num     :: String -> Effect Number
+  , str     :: String -> Effect String
+  , bool    :: String -> Effect Boolean
+  , nodeMay :: String -> Effect (Maybe Node)
+}
+
+mkMetajeloXpathEval :: Document -> Maybe NSResolver -> MJXpathEvals
+mkMetajeloXpathEval doc nsResMay = {
+    any     : (\n x r -> XP.evaluate x n nsResMay r Nothing doc)
+  , num     : (\n x -> XP.evaluateNumber x n nsResMay Nothing doc)
+  , str     : (\n x -> XP.evaluateString x n nsResMay Nothing doc)
+  , bool    : (\n x -> XP.evaluateBoolean x n nsResMay Nothing doc)
+  , nodeMay : (\n x -> XP.evaluate x n nsResMay RT.any_unordered_node_type Nothing doc
+                       >>= XP.singleNodeValue)
+}
+
+getDefaultParseEnv :: String -> Effect ParseEnv
+getDefaultParseEnv xmlDocStr = do
+  dp <- makeDOMParser
+  recDocEi <- parseXMLFromString xmlDocStr dp
+  recDoc <- case recDocEi of
+    Left er -> throw $ "XML parsing error: " <> er
+    Right doc -> pure doc
+  recNodeMay <- recordOfDoc recDoc
+  recNode <- case recNodeMay of
+    Nothing -> throw "Could not find <record> element!"
+    Just nd -> pure nd
+  nsRes <- getMetajeloResolver recNode recDoc
+  defEvals <- pure $ mkMetajeloXpathEval recDoc (Just nsRes)
+  pure $ {
+      doc: recDoc
+    , recNode: recNode
+    , xeval : defEvals
+    , xevalRoot : {
+        any : defEvals.any recNode
+      , num : defEvals.num recNode
+      , str : defEvals.str recNode
+      , bool : defEvals.bool recNode
+      , nodeMay : defEvals.nodeMay recNode
+    }
+  }
+
+recordOfDoc :: Document -> Effect (Maybe Node)
+recordOfDoc doc = do
+  recCollection <- getElementsByTagName recP doc
+  recordMayNoNS <- item 0 recCollection
+  recordMay <- case recordMayNoNS of
+    Nothing -> do
+      maybeRecs <- sequence $ map getRecByNS metajeloNamespaces
+      pure $ join $ find isJust maybeRecs
+    Just recMay -> pure $ Just recMay
+  pure $ map Ele.toNode recordMay
+  where
+    getRecByNS ns = do
+      recCol <- getElementsByTagNameNS (Just ns) recP doc
+      item 0 recCol

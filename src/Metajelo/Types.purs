@@ -31,12 +31,14 @@ type MetajeloRecord = {
 , supplementaryProducts :: NonEmptyArray SupplementaryProduct
   -- ^ The link to the set of supplemenary products
 }
---derive instance eqRecord :: Eq MetajeloRecord
+-- derive instance eqRecord :: Eq MetajeloRecord
 
 type Identifier = {
   id :: String
 , idType :: IdentifierType
 }
+-- derive instance eqIdentifier :: Eq Identifier
+
 type ResourceID = Identifier
 type InstitutionID = ResourceID
 

@@ -33,22 +33,6 @@ import Web.DOM.HTMLCollection            (item)
 import Web.DOM.Node                      (Node, childNodes, nodeName)
 import Web.DOM.NodeList                  (toArray)
 
-
-recordOfDoc :: Document -> Effect (Maybe Node)
-recordOfDoc doc = do
-  recCollection <- getElementsByTagName recP doc
-  recordMayNoNS <- item 0 recCollection
-  recordMay <- case recordMayNoNS of
-    Nothing -> do
-      maybeRecs <- sequence $ map getRecByNS metajeloNamespaces
-      pure $ join $ find isJust maybeRecs
-    Just recMay -> pure $ Just recMay
-  pure $ map Ele.toNode recordMay
-  where
-    getRecByNS ns = do
-      recCol <- getElementsByTagNameNS (Just ns) recP doc
-      item 0 recCol
-
 elemXmlns :: Element -> Effect (Maybe String)
 elemXmlns elem = getAttribute "xmlns" elem
 
@@ -56,59 +40,6 @@ nodeXmlns :: Node -> Effect (Maybe String)
 nodeXmlns node = case fromNode node of
   Nothing -> pure Nothing
   Just elem -> elemXmlns elem
-
-type ParseEnv = {
-  doc :: Document
-, recNode :: Node
-, xeval :: MJXpathEvals
-, xevalRoot :: MJXpathRootEvals
-}
-
-getDefaultParseEnv :: String -> Effect ParseEnv
-getDefaultParseEnv xmlDocStr = do
-  dp <- makeDOMParser
-  recDocEi <- parseXMLFromString xmlDocStr dp
-  recDoc <- case recDocEi of
-    Left er -> throw $ "XML parsing error: " <> er
-    Right doc -> pure doc
-  recNodeMay <- recordOfDoc recDoc
-  recNode <- case recNodeMay of
-    Nothing -> throw "Could not find <record> element!"
-    Just nd -> pure nd
-  nsRes <- getMetajeloResolver recNode recDoc
-  defEvals <- pure $ mkMetajeloXpathEval recDoc (Just nsRes)
-  pure $ {
-      doc: recDoc
-    , recNode: recNode
-    , xeval : defEvals
-    , xevalRoot : {
-        any : defEvals.any recNode
-      , num : defEvals.num recNode
-      , str : defEvals.str recNode
-      , bool : defEvals.bool recNode
-    }
-  }
-
-type MJXpathEvals = {
-    any  :: Node -> String -> RT.ResultType -> Effect XP.XPathResult
-  , num  :: Node -> String -> Effect Number
-  , str  :: Node -> String -> Effect String
-  , bool :: Node -> String -> Effect Boolean
-}
-type MJXpathRootEvals = {
-    any  :: String -> RT.ResultType -> Effect XP.XPathResult
-  , num  :: String -> Effect Number
-  , str  :: String -> Effect String
-  , bool :: String -> Effect Boolean
-}
-
-mkMetajeloXpathEval :: Document -> Maybe NSResolver -> MJXpathEvals
-mkMetajeloXpathEval doc nsResMay = {
-    any : (\n x r -> XP.evaluate x n nsResMay r Nothing doc)
-  , num : (\n x -> XP.evaluateNumber x n nsResMay Nothing doc)
-  , str : (\n x -> XP.evaluateString x n nsResMay Nothing doc)
-  , bool : (\n x -> XP.evaluateBoolean x n nsResMay Nothing doc)
-}
 
 readRecord :: ParseEnv -> Effect MetajeloRecord
 readRecord env = do
@@ -258,8 +189,7 @@ readBasicMetadata env prodNode = do
 
 readResourceID :: ParseEnv -> Node -> Effect (Maybe ResourceID)
 readResourceID env prodNode = do
-  resIdres <- env.xeval.any prodNode (xx resIdP) RT.any_unordered_node_type
-  resIdNodeMay <- XP.singleNodeValue resIdres
+  resIdNodeMay <- env.xeval.nodeMay prodNode (xx resIdP)
   resIdMay <- pure $ map getResId resIdNodeMay
   resIdTypeMay <- pure $ map getResIdType resIdNodeMay
   combineIdBits resIdMay resIdTypeMay
@@ -320,11 +250,7 @@ readFormats env prodNode = do
 
 readResourceMetadataSource :: ParseEnv -> Node -> Effect (Maybe ResourceMetadataSource)
 readResourceMetadataSource env prodNode = do
-  resMdSourceres <- env.xeval.any
-    prodNode
-    "x:resourceMetadataSource"
-    RT.any_unordered_node_type
-  resMdSourceNodeMay <- XP.singleNodeValue resMdSourceres
+  resMdSourceNodeMay <- env.xeval.nodeMay prodNode $ xx resMetaSourceP
   resMdSourceMay <- pure $ map (getUrl env ".") resMdSourceNodeMay
   resMdSourceTypeMay <- pure $ map getRelType resMdSourceNodeMay
   combineIdBits resMdSourceMay resMdSourceTypeMay
@@ -380,11 +306,7 @@ readLocation env prodNode = do
   where
     getSuperOrg :: Node -> Effect (Maybe String)
     getSuperOrg locNode = do
-      superOrgRes <- env.xeval.any
-        locNode
-        (xx superOrgNameP)
-        RT.any_unordered_node_type
-      suorOrgNodeMay <- XP.singleNodeValue superOrgRes
+      suorOrgNodeMay <- env.xeval.nodeMay locNode (xx superOrgNameP)
       sequence $ map (\nd -> env.xeval.str nd ".") suorOrgNodeMay
     getInstContact :: Node -> Effect InstitutionContact
     getInstContact locNode = do
@@ -490,8 +412,7 @@ readBooleanMay other = map Just $ readBoolean other
 -- | XML document.
 unsafeSingleNodeValue :: ParseEnv -> Node -> String -> Effect Node
 unsafeSingleNodeValue env ctxtNode xpath = do
-  xpres <- env.xeval.any ctxtNode xpath RT.any_unordered_node_type
-  nodeMay <- XP.singleNodeValue xpres
+  nodeMay <- env.xeval.nodeMay ctxtNode xpath
   case nodeMay of
     Just nd -> pure nd
     Nothing -> throw $ nodeErrMsg xpath

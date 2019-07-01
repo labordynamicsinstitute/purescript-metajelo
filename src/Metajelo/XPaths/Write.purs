@@ -1,6 +1,6 @@
 module Metajelo.XPaths.Write where
 
-import Prelude (bind, join, map, not, pure, unit, (#), ($), (<>), (>>=))
+import Prelude (Unit, bind, discard, join, map, not, pure, unit, (#), ($), (<>), (>>=))
 
 import Control.Apply                     (lift2)
 import Data.Array                        (head, filter)
@@ -33,34 +33,42 @@ import Web.DOM.HTMLCollection            (item)
 import Web.DOM.Node                      (Node, childNodes, nodeName)
 import Web.DOM.NodeList                  (toArray)
 
+--TODO: Create a utility function for writing XPaths that uses Node modificaiton internally.
+
+
+
 -- TODO, remove, for undefined:
 import Unsafe.Coerce (unsafeCoerce)
 import Prim.TypeError (QuoteLabel, class Warn)
 undefined :: forall a. Warn (QuoteLabel "undefined in use") => a
 undefined = unsafeCoerce unit
 
-type DocWriter t = t -> Document -> Effect Document
+type DocWriterRoot t = ParseEnv -> t -> Effect Unit
+type DocWriter t = ParseEnv -> t ->  Node -> Effect Unit
 
-writeRecord :: DocWriter MetajeloRecord
-writeRecord rec doc = pure doc >>=
- writeIdentifier rec.identifier >>=
- writeDate rec.date >>=
- writeModDate rec.lastModified >>=
- writeRelIdentifiers rec.relatedIdentifiers >>=
- writeSupplementaryProducts rec.supplementaryProducts
+writeRecord :: DocWriterRoot MetajeloRecord
+writeRecord env rec = do
+ writeIdentifier env rec.identifier
+ writeDate env rec.date
+ writeModDate env rec.lastModified
+ writeRelIdentifiers env rec.relatedIdentifiers
+ writeSupplementaryProducts env rec.supplementaryProducts
 
-writeIdentifier :: DocWriter Identifier
-writeIdentifier = undefined
+writeIdentifier :: DocWriterRoot Identifier
+writeIdentifier env recId = undefined
 
-writeDate :: DocWriter XsdDate
+writeIdentifierType :: DocWriterRoot IdentifierType
+writeIdentifierType = undefined
+
+writeDate :: DocWriterRoot XsdDate
 writeDate = undefined
 
-writeModDate :: DocWriter XsdDate
+writeModDate :: DocWriterRoot XsdDate
 writeModDate = undefined
 
-writeRelIdentifiers :: DocWriter (NonEmptyArray RelatedIdentifier)
+writeRelIdentifiers :: DocWriterRoot (NonEmptyArray RelatedIdentifier)
 writeRelIdentifiers = undefined
 
-writeSupplementaryProducts :: DocWriter (NonEmptyArray SupplementaryProduct)
+writeSupplementaryProducts :: DocWriterRoot (NonEmptyArray SupplementaryProduct)
 writeSupplementaryProducts = undefined
 

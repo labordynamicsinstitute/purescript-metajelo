@@ -57,7 +57,7 @@ mainTest = runTest do
       Assert.equal expected actual
   suite "Metajelo.XPaths (with version prefix)" do
     test "Metajelo Parsing" do
-      parseEnv <- liftEffect $ MXR.getDefaultParseEnv TD.metajeloXmlPrefixed
+      parseEnv <- liftEffect $ MX.getDefaultParseEnv TD.metajeloXmlPrefixed
       record <- liftEffect $ MXR.readRecord parseEnv
       Assert.equal "identifier0" record.identifier.id
       -- Assert.equal MJ.EISSN record.identifier.idType
@@ -68,7 +68,7 @@ mainTest = runTest do
       domParser <- liftEffect $ makeDOMParser
 
       metajeloDoc <- liftEffect $ parseRecXmlnsFakeXmlDoc domParser
-      metajeloMay :: Maybe Node <- liftEffect $ MXR.recordOfDoc metajeloDoc
+      metajeloMay :: Maybe Node <- liftEffect $ MX.recordOfDoc metajeloDoc
       Assert.assert "found record element" (isJust metajeloMay)
       metajelo :: Node <- pure $ case metajeloMay of
         Nothing -> toNode metajeloDoc
@@ -87,7 +87,7 @@ mainTest = runTest do
       Assert.equal TD.fakeXmlns retrievedNS
 
     test "Metajelo Parsing" do
-      parseEnv <- liftEffect $ MXR.getDefaultParseEnv TD.metajeloXml
+      parseEnv <- liftEffect $ MX.getDefaultParseEnv TD.metajeloXml
       record <- liftEffect $ MXR.readRecord parseEnv
       Assert.equal "OjlTjf" record.identifier.id
       Assert.equal MJ.EISSN record.identifier.idType
