@@ -55,7 +55,7 @@ mainTest = runTest do
       expected <- pure "x:institutionPolicies/x:institutionPolicy"
       actual <- pure $ xx MX.instPoliciesP /? MX.instPolicyP
       Assert.equal expected actual
-  suite "Metajelo.XPaths (with version prefix)" do
+  suite "Metajelo.XPaths.Read (with version prefix)" do
     test "Metajelo Parsing" do
       parseEnv <- liftEffect $ MX.getDefaultParseEnv TD.metajeloXmlPrefixed
       record <- liftEffect $ MXR.readRecord parseEnv
@@ -63,7 +63,7 @@ mainTest = runTest do
       -- Assert.equal MJ.EISSN record.identifier.idType
       -- Assert.equal "2020-04-04" record.date
       -- Assert.equal "2019-05-04Z" record.lastModified
-  suite "Metajelo.XPaths (no prefix)" do
+  suite "Metajelo.XPaths.Read (no prefix)" do
     test "getMetajeloResolver finds xmlns of record" do
       domParser <- liftEffect $ makeDOMParser
 
@@ -142,6 +142,17 @@ mainTest = runTest do
       Assert.equal true prod0.location.versioning
       Assert.equal true prod1.location.versioning
       -- pure unit
+  suite "Metajelo.XPaths.Write" do
+    test "Metajelo Writing" do
+      env <- liftEffect $ MX.getDefaultParseEnv TD.metajeloXml
+      idNew <- pure {id: "FooBar", idType: MJ.PURL}
+      -- idNew <- {"FooBar"}
+      id0 <- liftEffect $ MXR.readIdentifier env
+      liftEffect $ MXW.writeIdentifier env idNew
+      id1 <- liftEffect $ MXR.readIdentifier env
+      Assert.assert ("id0 == idNew: " <> (show id0) <> (show idNew )) $ id0 /= idNew
+      Assert.assert ("id1 /= idNew: " <> (show id1) <> (show idNew )) $ (id1 == idNew)
+      pure unit
 
   suite "namespaced tests" do
     test "metajelo.xml" do

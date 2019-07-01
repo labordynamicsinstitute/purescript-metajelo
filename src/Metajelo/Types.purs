@@ -68,7 +68,6 @@ data IdentifierType
   | UPC
   | URL
   | URN
---derive instance eqIdentifierType :: Eq IdentifierType
 derive instance genericIdentifierType :: Generic IdentifierType _
 instance showIdentifierType :: Show IdentifierType where
   show ArXiv = "arXiv"

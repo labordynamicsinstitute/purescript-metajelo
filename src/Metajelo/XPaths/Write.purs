@@ -1,6 +1,7 @@
 module Metajelo.XPaths.Write where
 
-import Prelude (Unit, bind, discard, join, map, not, pure, unit, (#), ($), (<>), (>>=))
+import Prelude (class Show, Unit, bind, discard, join, map, not, pure, show,
+unit, (#), ($), (<>), (>>=))
 
 import Control.Apply                     (lift2)
 import Data.Array                        (head, filter)
@@ -9,6 +10,7 @@ import Data.Array.NonEmpty               as NA
 import Data.Either                       (Either(..))
 import Data.Foldable                     (find)
 import Data.Maybe                        (Maybe(..), fromMaybe, isJust)
+--import Data.Show                         (class Show)
 import Data.String.Utils                 (startsWith)
 import Data.Traversable                  (sequence)
 import Data.XPath                        (class XPathLike, root, xx, (/?), (//))
@@ -30,12 +32,9 @@ import Web.DOM.Document.XPath.ResultType as RT
 import Web.DOM.Element                   (Element, fromNode, getAttribute, localName)
 import Web.DOM.Element                   as Ele
 import Web.DOM.HTMLCollection            (item)
-import Web.DOM.Node                      (Node, childNodes, nodeName)
+import Web.DOM.Node                      (Node, childNodes, nodeName, setNodeValue
+                                         , setTextContent)
 import Web.DOM.NodeList                  (toArray)
-
---TODO: Create a utility function for writing XPaths that uses Node modificaiton internally.
-
-
 
 -- TODO, remove, for undefined:
 import Unsafe.Coerce (unsafeCoerce)
@@ -55,16 +54,25 @@ writeRecord env rec = do
  writeSupplementaryProducts env rec.supplementaryProducts
 
 writeIdentifier :: DocWriterRoot Identifier
-writeIdentifier env recId = undefined
+writeIdentifier env recId = do
+  recNdMay <- env.xevalRoot.nodeMay idRootP
+  writeNodeMay recId.id recNdMay
+  writeIdentifierType env recId.idType
 
 writeIdentifierType :: DocWriterRoot IdentifierType
-writeIdentifierType = undefined
+writeIdentifierType env idType = do
+  idTypeNdMay <- env.xevalRoot.nodeMay idTypeRootAP
+  writeNodeMay (show idType) idTypeNdMay
 
 writeDate :: DocWriterRoot XsdDate
-writeDate = undefined
+writeDate env date = do
+  dateNdMay <- env.xevalRoot.nodeMay dateRootP
+  writeNodeMay date dateNdMay
 
 writeModDate :: DocWriterRoot XsdDate
-writeModDate = undefined
+writeModDate env date = do
+  dateNdMay <- env.xevalRoot.nodeMay lastModRootP
+  writeNodeMay date dateNdMay
 
 writeRelIdentifiers :: DocWriterRoot (NonEmptyArray RelatedIdentifier)
 writeRelIdentifiers = undefined
@@ -72,3 +80,7 @@ writeRelIdentifiers = undefined
 writeSupplementaryProducts :: DocWriterRoot (NonEmptyArray SupplementaryProduct)
 writeSupplementaryProducts = undefined
 
+writeNodeMay :: String -> Maybe Node -> Effect Unit
+writeNodeMay str ndMay = do
+  _ <- sequence $ map (setTextContent str) ndMay
+  pure unit
