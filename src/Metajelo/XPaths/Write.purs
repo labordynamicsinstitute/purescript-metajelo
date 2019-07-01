@@ -84,3 +84,8 @@ writeNodeMay :: String -> Maybe Node -> Effect Unit
 writeNodeMay str ndMay = do
   _ <- sequence $ map (setTextContent str) ndMay
   pure unit
+
+
+blankDoc :: String
+blankDoc = """TODO
+"""

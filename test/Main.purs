@@ -16,7 +16,7 @@ import Effect.Console                    (logShow)
 -- import Foreign                           (isUndefined, isNull, unsafeToForeign)
 import Partial.Unsafe                    (unsafePartial)
 import Test.Data                         as TD
-import Test.Unit                         (suite, test)
+import Test.Unit                         (suite, test, testSkip)
 import Test.Unit.Main                    (runTest)
 import Test.Unit.Assert                  as Assert
 import Text.Email.Validate               as EA
@@ -143,7 +143,7 @@ mainTest = runTest do
       Assert.equal true prod1.location.versioning
       -- pure unit
   suite "Metajelo.XPaths.Write" do
-    test "Metajelo Writing" do
+    test "Metajelo Writing (individual fields)" do
       env <- liftEffect $ MX.getDefaultParseEnv TD.metajeloXml
       idNew <- pure {id: "FooBar", idType: MJ.PURL}
       -- idNew <- {"FooBar"}
@@ -152,6 +152,15 @@ mainTest = runTest do
       id1 <- liftEffect $ MXR.readIdentifier env
       Assert.assert ("id0 == idNew: " <> (show id0) <> (show idNew )) $ id0 /= idNew
       Assert.assert ("id1 /= idNew: " <> (show id1) <> (show idNew )) $ (id1 == idNew)
+      pure unit
+    -- TODO: currently testSkip:
+    testSkip "Metajelo Writing (entire record, round trip)" do
+      writeEnv <- liftEffect $ MX.getDefaultParseEnv MXW.blankDoc
+      readEnv <- liftEffect $ MX.getDefaultParseEnv TD.metajeloXmlPrefixed
+      rec0 <- liftEffect $ MXR.readRecord readEnv
+      liftEffect $ MXW.writeRecord writeEnv rec0
+      rec1 <- liftEffect $ MXR.readRecord writeEnv
+      Assert.assert ("rec0 /= rec1: " <> (show rec0) <> (show rec1)) $ rec0 == rec1
       pure unit
 
   suite "namespaced tests" do
