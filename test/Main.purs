@@ -145,13 +145,30 @@ mainTest = runTest do
   suite "Metajelo.XPaths.Write" do
     test "Metajelo Writing (individual fields)" do
       env <- liftEffect $ MX.getDefaultParseEnv TD.metajeloXml
+      -- Testing identifier creation
       idNew <- pure {id: "FooBar", idType: MJ.PURL}
-      -- idNew <- {"FooBar"}
       id0 <- liftEffect $ MXR.readIdentifier env
       liftEffect $ MXW.writeIdentifier env idNew
       id1 <- liftEffect $ MXR.readIdentifier env
       Assert.assert ("id0 == idNew: " <> (show id0) <> (show idNew )) $ id0 /= idNew
       Assert.assert ("id1 /= idNew: " <> (show id1) <> (show idNew )) $ (id1 == idNew)
+      -- Testing related idenitfier creation
+      newRelId :: MJ.RelatedIdentifier <- pure {
+        id : "Dog_Cat_Fox"
+      , idType : MJ.EAN13
+      , relType : MJ.IsPreviousVersionOf
+      }
+      tlog $ "setting attributes: " <> show newRelId.idType <> " " <> show newRelId.relType
+      liftEffect $ MXW.writeRelIdentifiers env $ DAN.singleton newRelId
+      relTestRec <- liftEffect $ MXR.readRecord env
+      -- TODO: need to debug with XMLSerializer.serializeToString()
+      -- TODO: https://developer.mozilla.org/en-US/docs/Web/Guide/Parsing_and_serializing_XML#Serializing_an_XML_document
+      Assert.equal 3 (DAN.length relTestRec.relatedIdentifiers)
+      relId3 <- pure $ unsafePartial fromJust $ relTestRec.relatedIdentifiers DAN.!! 3
+      Assert.equal newRelId.id relId3.id
+      Assert.equal newRelId.idType relId3.idType
+      Assert.equal newRelId.relType relId3.relType
+
       pure unit
     -- TODO: currently testSkip:
     testSkip "Metajelo Writing (entire record, round trip)" do

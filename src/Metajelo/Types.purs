@@ -33,20 +33,20 @@ type MetajeloRecord = {
 }
 -- derive instance eqRecord :: Eq MetajeloRecord
 
-type Identifier = {
+type BaseId otherField = {
   id :: String
 , idType :: IdentifierType
+| otherField
 }
+
+type Identifier = BaseId()
+
 -- derive instance eqIdentifier :: Eq Identifier
 
 type ResourceID = Identifier
 type InstitutionID = ResourceID
 
-type RelatedIdentifier = {
-  id :: String
-, idType :: IdentifierType
-, relType :: RelationType
-}
+type RelatedIdentifier = BaseId (relType :: RelationType)
 
 -- | The type of the Identifier and RelatedIdentifier.
 data IdentifierType

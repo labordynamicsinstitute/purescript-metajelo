@@ -11,7 +11,7 @@ import Data.Foldable                     (find)
 import Data.Maybe                        (Maybe(..), fromMaybe, isJust)
 import Data.String.Utils                 (startsWith)
 import Data.Traversable                  (sequence)
-import Data.XPath                        (class XPathLike, root, xx, (/?), (//))
+import Data.XPath                        (class XPathLike, root, at, xx, (/?), (//))
 import Effect                            (Effect)
 import Effect.Exception                  (throw)
 
@@ -59,7 +59,7 @@ readRecord env = do
 readIdentifier :: ParseEnv -> Effect Identifier
 readIdentifier env = do
   recId <- env.xevalRoot.str idRootP
-  idTypeStr <- env.xevalRoot.str idTypeRootAP
+  idTypeStr <- env.xevalRoot.str $ idTypeRootAP
   idType <- readIdentifierType $ idTypeStr
   pure {id: recId, idType: idType}
 
@@ -105,11 +105,11 @@ readRelIdentifiers env = do
     getRelId nd = env.xeval.str nd "."
     getRelIdType :: Node -> Effect IdentifierType
     getRelIdType nd = do
-      idTypeStr <- env.xeval.str nd relIdTypeAP
+      idTypeStr <- env.xeval.str nd $ at relIdTypeAT
       readIdentifierType idTypeStr
     getRelRelType :: Node -> Effect RelationType
     getRelRelType nd = do
-      idRelStr <- env.xeval.str nd relTypeAP
+      idRelStr <- env.xeval.str nd $ at relTypeAT
       readRelationType idRelStr
     getRelIdentifier :: Node -> Effect RelatedIdentifier
     getRelIdentifier nd = do
@@ -257,7 +257,7 @@ readResourceMetadataSource env prodNode = do
   where
     getRelType :: Node -> Effect RelationType
     getRelType nd = do
-      relTypeStr <- env.xeval.str nd relTypeAP
+      relTypeStr <- env.xeval.str nd $ at relTypeAT
       readRelationType relTypeStr
     combineIdBits :: Maybe (Effect URL) -> Maybe (Effect RelationType)
       -> Effect (Maybe ResourceMetadataSource)
@@ -277,7 +277,7 @@ readInstitutionID env locNode = do
     getInstId nd = env.xeval.str nd "."
     getInstIdType :: Node -> Effect IdentifierType
     getInstIdType nd = do
-      idTypeStr <- env.xeval.str nd idTypeAP
+      idTypeStr <- env.xeval.str nd $ at idTypeAT
       readIdentifierType idTypeStr
 
 readLocation :: ParseEnv -> Node -> Effect Location
@@ -311,7 +311,7 @@ readLocation env prodNode = do
     getInstContact :: Node -> Effect InstitutionContact
     getInstContact locNode = do
       instContactNode <- unsafeSingleNodeValue env locNode instContactNodeName
-      contactTypeStr <- env.xeval.str instContactNode instContactTypeAP
+      contactTypeStr <- env.xeval.str instContactNode $ at instContactTypeAT
       contactType <- readInstitutionContactType contactTypeStr
       contactEmailStr <- env.xeval.str instContactNode "."
       contactEmail <- case validate contactEmailStr of
@@ -376,9 +376,9 @@ readInstitutionPolicies env locNode = do
           "' as child of institutionPolicy"
         Nothing -> throw $ "unable to convert policy child Node with name '"
           <>  nodeName policyChild <> "' to an Element"
-      policyTypeStr <- env.xeval.str polNode polTypeAP
+      policyTypeStr <- env.xeval.str polNode $ at polTypeAT
       policyType <- readPolicyType policyTypeStr
-      appliesToProdStr <- env.xeval.str polNode appliesToProdAP
+      appliesToProdStr <- env.xeval.str polNode $ at appliesToProdAT
       appliesToProd <- readBooleanMay appliesToProdStr
       pure {policy: policy, policyType: policyType, appliesToProduct: appliesToProd}
 
@@ -406,18 +406,6 @@ readBoolean unknown =
 readBooleanMay :: String -> Effect (Maybe Boolean)
 readBooleanMay "" = pure Nothing
 readBooleanMay other = map Just $ readBoolean other
-
--- | Used to get a node we should be there, but still returns
--- | an error message in the event of failure (e.g., for a bad)
--- | XML document.
-unsafeSingleNodeValue :: ParseEnv -> Node -> String -> Effect Node
-unsafeSingleNodeValue env ctxtNode xpath = do
-  nodeMay <- env.xeval.nodeMay ctxtNode xpath
-  case nodeMay of
-    Just nd -> pure nd
-    Nothing -> throw $ nodeErrMsg xpath
-  where
-    nodeErrMsg nodePath = "Couldn't find required node at: " <> nodePath
 
 getUrl :: ParseEnv -> String -> Node -> Effect URL
 getUrl env xpath nd = do

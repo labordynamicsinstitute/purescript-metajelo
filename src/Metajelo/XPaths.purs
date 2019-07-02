@@ -11,7 +11,7 @@ import Data.Foldable                     (find)
 import Data.Maybe                        (Maybe(..), fromMaybe, isJust)
 import Data.String.Utils                 (startsWith)
 import Data.Traversable                  (sequence)
-import Data.XPath                        (class XPathLike, root, xx, (/?), (//))
+import Data.XPath                        (class XPathLike, root, at, xx, (/?), (//))
 import Effect                            (Effect)
 import Effect.Exception                  (throw)
 
@@ -32,6 +32,8 @@ import Web.DOM.HTMLCollection            (item)
 import Web.DOM.Node                      (Node, childNodes, nodeName)
 import Web.DOM.NodeList                  (toArray)
 
+-- Naming conventions: AT = attribute, AP = attribute path
+--                   , P = (element) Path
 
 recP :: String
 recP = "record"
@@ -102,26 +104,26 @@ resIdP = "resourceID"
 resMetaSourceP :: String
 resMetaSourceP = "resourceMetadataSource"
 
-idTypeAP :: String
-idTypeAP = "@identifierType"
+idTypeAT :: String
+idTypeAT = "identifierType"
 
-relIdTypeAP :: String
-relIdTypeAP  = "@relatedIdentifierType"
+relIdTypeAT :: String
+relIdTypeAT  = "relatedIdentifierType"
 
-relTypeAP :: String
-relTypeAP = "@relationType"
+relTypeAT :: String
+relTypeAT = "relationType"
 
-instContactTypeAP :: String
-instContactTypeAP  = "@institutionContactType"
+instContactTypeAT :: String
+instContactTypeAT  = "institutionContactType"
 
-polTypeAP :: String
-polTypeAP = "@policyType"
+polTypeAT :: String
+polTypeAT = "policyType"
 
-appliesToProdAP :: String
-appliesToProdAP = "@appliesToProduct"
+appliesToProdAT :: String
+appliesToProdAT = "appliesToProduct"
 
 idTypeRootAP :: String
-idTypeRootAP = idRootP // idTypeAP
+idTypeRootAP = idRootP // at idTypeAT
 
 recRootP :: String
 recRootP = root /? recP
@@ -150,6 +152,16 @@ metajeloNamespaces = NA.cons' "http://ourdomain.cornell.edu/reuse/v.01" []
 defaultMetajeloNS :: String
 defaultMetajeloNS = "http://ourdomain.cornell.edu/reuse/v.01"
 
+-- | Determine
+getDefaultNS :: Maybe Element -> Effect String
+getDefaultNS mayElem = do
+  case mayElem of
+    Nothing -> pure $ defaultMetajeloNS
+    Just elem -> map nsOrGuess (getAttribute "xmlns" elem)
+  where
+    nsOrGuess :: Maybe String -> String
+    nsOrGuess nsMay = fromMaybe defaultMetajeloNS nsMay
+
 -- | Resolver that returns `defaultMetajeloNS` as a fallback
 getMetajeloResolver :: Node -> Document -> Effect NSResolver
 getMetajeloResolver node doc = do
@@ -159,13 +171,6 @@ getMetajeloResolver node doc = do
   defaultNS :: String <- getDefaultNS nodeEleMay
   pure $ XP.customNSResolver $ makeMjNSResFun nsResolver defaultNS
   where
-    getDefaultNS :: Maybe Element -> Effect String
-    getDefaultNS mayElem = do
-      case mayElem of
-        Nothing -> pure $ defaultMetajeloNS
-        Just elem -> map nsOrGuess (getAttribute "xmlns" elem)
-    nsOrGuess :: Maybe String -> String
-    nsOrGuess nsMay = fromMaybe defaultMetajeloNS nsMay
     makeMjNSResFun :: NSResolver -> String -> String -> String
     makeMjNSResFun nsr defNS prefix = case XP.lookupNamespaceURI nsr prefix of
       Nothing -> defNS
@@ -173,7 +178,9 @@ getMetajeloResolver node doc = do
 
 type ParseEnv = {
   doc :: Document
+, ns :: String
 , recNode :: Node
+, recElem :: Element
 , xeval :: MJXpathEvals
 , xevalRoot :: MJXpathRootEvals
 }
@@ -213,13 +220,19 @@ getDefaultParseEnv xmlDocStr = do
     Right doc -> pure doc
   recNodeMay <- recordOfDoc recDoc
   recNode <- case recNodeMay of
-    Nothing -> throw "Could not find <record> element!"
+    Nothing -> throw "Could not find <record> node!"
     Just nd -> pure nd
+  recElem <- case fromNode recNode of
+    Nothing -> throw "<record> node could not be cast to an element!"
+    Just el -> pure el
+  recNS <- getDefaultNS $ Just recElem
   nsRes <- getMetajeloResolver recNode recDoc
   defEvals <- pure $ mkMetajeloXpathEval recDoc (Just nsRes)
   pure $ {
       doc: recDoc
+    , ns : recNS
     , recNode: recNode
+    , recElem: recElem
     , xeval : defEvals
     , xevalRoot : {
         any : defEvals.any recNode
@@ -244,3 +257,15 @@ recordOfDoc doc = do
     getRecByNS ns = do
       recCol <- getElementsByTagNameNS (Just ns) recP doc
       item 0 recCol
+
+-- | Used to get a node we know should be there, but still returns
+-- | an error message in the event of failure (e.g., for a bad)
+-- | XML document.
+unsafeSingleNodeValue :: ParseEnv -> Node -> String -> Effect Node
+unsafeSingleNodeValue env ctxtNode xpath = do
+  nodeMay <- env.xeval.nodeMay ctxtNode xpath
+  case nodeMay of
+    Just nd -> pure nd
+    Nothing -> throw $ nodeErrMsg xpath
+  where
+    nodeErrMsg nodePath = "Couldn't find required node at: " <> nodePath
