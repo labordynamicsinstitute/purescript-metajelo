@@ -8,7 +8,7 @@ import Data.Array                        (head, filter)
 import Data.Array.NonEmpty               (NonEmptyArray)
 import Data.Array.NonEmpty               as NA
 import Data.Either                       (Either(..))
-import Data.Foldable                     (find)
+import Data.Foldable                     (find, for_)
 import Data.Maybe                        (Maybe(..), fromMaybe, isJust)
 --import Data.Show                         (class Show)
 import Data.String.Utils                 (startsWith)
@@ -93,7 +93,10 @@ writeRelIdentifiers env relIds = do
     )
 
 writeSupplementaryProducts :: DocWriterRoot (NonEmptyArray SupplementaryProduct)
-writeSupplementaryProducts = undefined
+writeSupplementaryProducts env prods = for_ prods (\p -> writeProduct env p)
+
+writeProduct :: DocWriterRoot SupplementaryProduct
+writeProduct env prod = undefined
 
 writeNodeMay :: String -> Maybe Node -> Effect Unit
 writeNodeMay str ndMay = do
