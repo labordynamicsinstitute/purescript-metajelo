@@ -23,6 +23,8 @@ import Text.Email.Validate               as EA
 import URL.Validator                     as URL
 import Web.DOM.Document                  (Document, toNode)
 import Web.DOM.DOMParser                 (DOMParser, makeDOMParser, parseXMLFromString)
+import Web.DOM.XMLSerializer             (XMLSerializer, makeXMLSerializer
+                                         , serializeToString)
 import Web.DOM.Document.XPath            as XP
 import Web.DOM.Document.XPath.ResultType as RT
 import Web.DOM.Node                      (Node)
@@ -145,6 +147,7 @@ mainTest = runTest do
   suite "Metajelo.XPaths.Write" do
     test "Metajelo Writing (individual fields)" do
       env <- liftEffect $ MX.getDefaultParseEnv TD.metajeloXml
+      xmlSrlzr <- liftEffect makeXMLSerializer
       -- Testing identifier creation
       idNew <- pure {id: "FooBar", idType: MJ.PURL}
       id0 <- liftEffect $ MXR.readIdentifier env
@@ -158,13 +161,12 @@ mainTest = runTest do
       , idType : MJ.EAN13
       , relType : MJ.IsPreviousVersionOf
       }
-      tlog $ "setting attributes: " <> show newRelId.idType <> " " <> show newRelId.relType
       liftEffect $ MXW.writeRelIdentifiers env $ DAN.singleton newRelId
       relTestRec <- liftEffect $ MXR.readRecord env
-      -- TODO: need to debug with XMLSerializer.serializeToString()
-      -- TODO: https://developer.mozilla.org/en-US/docs/Web/Guide/Parsing_and_serializing_XML#Serializing_an_XML_document
+      --curDoc <- liftEffect $ serializeToString env.doc xmlSrlzr -- DEBUG
+      --tlog $ "DEBUG:\n" <> curDoc
       Assert.equal 3 (DAN.length relTestRec.relatedIdentifiers)
-      relId3 <- pure $ unsafePartial fromJust $ relTestRec.relatedIdentifiers DAN.!! 3
+      relId3 <- pure $ unsafePartial fromJust $ relTestRec.relatedIdentifiers DAN.!! 2
       Assert.equal newRelId.id relId3.id
       Assert.equal newRelId.idType relId3.idType
       Assert.equal newRelId.relType relId3.relType

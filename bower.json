@@ -14,7 +14,7 @@
   "dependencies": {
     "purescript-generics-rep": "^6.1.1",
     "purescript-naturals": "^3.0.0",
-    "purescript-web-dom-parser": "^6.0.0",
+    "purescript-web-dom-parser": "^6.1.0",
     "purescript-email-validate": "^5.0.0",
     "purescript-stringutils": "^0.0.8",
     "purescript-url-validator": "^1.1.0",
