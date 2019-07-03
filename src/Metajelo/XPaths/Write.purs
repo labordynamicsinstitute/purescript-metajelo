@@ -44,7 +44,7 @@ undefined :: forall a. Warn (QuoteLabel "undefined in use") => a
 undefined = unsafeCoerce unit
 
 type DocWriterRoot t = ParseEnv -> t -> Effect Unit
-type DocWriter t = ParseEnv -> t ->  Node -> Effect Unit
+type DocWriter t = ParseEnv -> Node -> t -> Effect Unit
 
 writeRecord :: DocWriterRoot MetajeloRecord
 writeRecord env rec = do
@@ -79,7 +79,8 @@ writeRelIdentifiers :: DocWriterRoot (NonEmptyArray RelatedIdentifier)
 writeRelIdentifiers env relIds = do
   newRelIdEls <- relIdEls
   _ <- sequence $ newRelIdEls <#> (\relIdEl ->
-    appendChild (toNode relIdEl) env.recNode)
+    appendChild (toNode relIdEl) env.recNode
+  )
   pure unit
   where
     relIdEls :: Effect (NonEmptyArray Element)
@@ -96,7 +97,37 @@ writeSupplementaryProducts :: DocWriterRoot (NonEmptyArray SupplementaryProduct)
 writeSupplementaryProducts env prods = for_ prods (\p -> writeProduct env p)
 
 writeProduct :: DocWriterRoot SupplementaryProduct
-writeProduct env prod = undefined
+writeProduct env prod = do
+  prodContainer <- unsafeSingleNodeValue env env.recNode sProdContainerP
+  prodNd <- map toNode $ createRecEle env sProdP
+  _ <- appendChild prodNd env.recNode
+  writeBasicMetadata env prodNd prod.basicMetadata
+  _ <- sequence $ prod.resourceID <#> (\resId -> writeResourceID env prodNd resId)
+  writeResourceType env prodNd prod.resourceType
+  writeFormats env prodNd prod.format
+  writeResourceMetadataSource env prodNd prod.resourceMetadataSource
+  writeLocation env prodNd prod.location
+
+writeBasicMetadata :: DocWriter BasicMetadata
+writeBasicMetadata env prodNd bm = undefined
+
+writeResourceID :: DocWriter ResourceID
+writeResourceID env prodNd resId = undefined
+
+writeResourceType :: DocWriter ResourceType
+writeResourceType env prodNd resType = undefined
+
+writeFormats :: DocWriter (Array Format)
+writeFormats env prodNd formats = undefined
+
+writeResourceMetadataSource :: DocWriter (Maybe ResourceMetadataSource)
+writeResourceMetadataSource env prodNd resMdSources = undefined
+
+writeLocation :: DocWriter Location
+writeLocation env prodNd loc = undefined
+
+
+----- Utility functions below -----
 
 writeNodeMay :: String -> Maybe Node -> Effect Unit
 writeNodeMay str ndMay = do

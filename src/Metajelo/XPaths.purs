@@ -50,6 +50,12 @@ dateP = "date"
 lastModP :: String
 lastModP = "lastModified"
 
+sProdContainerP :: String
+sProdContainerP = "supplementaryProducts"
+
+sProdP :: String
+sProdP = "supplementaryProduct"
+
 instIdP :: String
 instIdP = "institutionID"
 
@@ -140,9 +146,11 @@ lastModRootP = recRootP /? lastModP
 relIdRootP :: String
 relIdRootP = recRootP /? relIdP
 
-sProdRootP :: String
-sProdRootP = recRootP /? "supplementaryProducts" /? "supplementaryProduct"
+sProdContainerRootP :: String
+sProdContainerRootP = recRootP /? sProdContainerP
 
+sProdRootP :: String
+sProdRootP = sProdContainerRootP /? sProdP
 
 
 metajeloNamespaces :: NonEmptyArray String
