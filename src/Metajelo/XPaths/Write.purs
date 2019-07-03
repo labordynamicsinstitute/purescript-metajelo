@@ -76,22 +76,13 @@ writeModDate env date = do
   writeNodeMay date dateNdMay
 
 writeRelIdentifiers :: DocWriterRoot (NonEmptyArray RelatedIdentifier)
-writeRelIdentifiers env relIds = do
-  newRelIdEls <- relIdEls
-  _ <- sequence $ newRelIdEls <#> (\relIdEl ->
-    appendChild (toNode relIdEl) env.recNode
-  )
-  pure unit
-  where
-    relIdEls :: Effect (NonEmptyArray Element)
-    relIdEls = sequence $ relIds <#> (\relId -> do
-      el <- createRecEle env relIdP
-      let nd = toNode el
-      writeNodeMay relId.id $ Just nd
-      setAttribute relIdTypeAT (show relId.idType) el
-      setAttribute relTypeAT (show relId.relType) el
-      pure el
-    )
+writeRelIdentifiers env relIds = for_ relIds (\relId -> do
+  el <- createAppendRecEle env env.recNode relIdP
+  let nd = toNode el
+  writeNodeMay relId.id $ Just nd
+  setAttribute relIdTypeAT (show relId.idType) el
+  setAttribute relTypeAT (show relId.relType) el
+)
 
 writeSupplementaryProducts :: DocWriterRoot (NonEmptyArray SupplementaryProduct)
 writeSupplementaryProducts env prods = for_ prods (\p -> writeProduct env p)
@@ -99,8 +90,7 @@ writeSupplementaryProducts env prods = for_ prods (\p -> writeProduct env p)
 writeProduct :: DocWriterRoot SupplementaryProduct
 writeProduct env prod = do
   prodContainer <- unsafeSingleNodeValue env env.recNode sProdContainerP
-  prodNd <- map toNode $ createRecEle env sProdP
-  _ <- appendChild prodNd env.recNode
+  prodNd <- map toNode $ createAppendRecEle env env.recNode sProdP
   writeBasicMetadata env prodNd prod.basicMetadata
   _ <- sequence $ prod.resourceID <#> (\resId -> writeResourceID env prodNd resId)
   writeResourceType env prodNd prod.resourceType
@@ -134,6 +124,14 @@ writeNodeMay str ndMay = do
   _ <- sequence $ map (setTextContent str) ndMay
   pure unit
 
+createAppendRecEle :: ParseEnv -> Node -> String -> Effect Element
+createAppendRecEle env parNode tag = do
+  el <- createRecEle env tag
+  _ <- appendChild (toNode el) parNode
+  pure el
+
+-- | Less safe than using `createAppendRecEle` directly,
+-- | due to the possibility of creating dangling nodes.
 createRecEle :: ParseEnv -> String -> Effect Element
 createRecEle env tag = do
   let recPfxMay = prefix env.recElem
