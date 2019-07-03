@@ -1,3 +1,11 @@
+-- | Naming conventions:
+-- | * AT = attribute
+-- | * AP = attribute path
+-- | * P = (element) path
+-- | * CP = Container (element) path
+-- |
+-- | Of these, CP is non-standard and just means an element used to contain
+-- | a list of other elements of uniform type.
 module Metajelo.XPaths where
 
 import Prelude (bind, join, map, not, pure, unit, (#), ($), (<>), (>>=))
@@ -32,9 +40,6 @@ import Web.DOM.HTMLCollection            (item)
 import Web.DOM.Node                      (Node, childNodes, nodeName)
 import Web.DOM.NodeList                  (toArray)
 
--- Naming conventions: AT = attribute, AP = attribute path
---                   , P = (element) Path
-
 recP :: String
 recP = "record"
 
@@ -50,8 +55,8 @@ dateP = "date"
 lastModP :: String
 lastModP = "lastModified"
 
-sProdContainerP :: String
-sProdContainerP = "supplementaryProducts"
+sProdCP :: String
+sProdCP = "supplementaryProducts"
 
 sProdP :: String
 sProdP = "supplementaryProduct"
@@ -107,17 +112,32 @@ pubYearP = "PublicationYear"
 resIdP :: String
 resIdP = "resourceID"
 
+resTypeP :: String
+resTypeP = "resourceType"
+
+formatCP :: String
+formatCP = "Format"
+
+formatP :: String
+formatP = "format"
+
 resMetaSourceP :: String
 resMetaSourceP = "resourceMetadataSource"
 
 idTypeAT :: String
 idTypeAT = "identifierType"
 
+resIdTypeAT :: String
+resIdTypeAT = "relatedIdentifierType"
+
 relIdTypeAT :: String
 relIdTypeAT  = "relatedIdentifierType"
 
 relTypeAT :: String
 relTypeAT = "relationType"
+
+resTypeGenAT :: String
+resTypeGenAT = "resourceTypeGeneral"
 
 instContactTypeAT :: String
 instContactTypeAT  = "institutionContactType"
@@ -147,7 +167,7 @@ relIdRootP :: String
 relIdRootP = recRootP /? relIdP
 
 sProdContainerRootP :: String
-sProdContainerRootP = recRootP /? sProdContainerP
+sProdContainerRootP = recRootP /? sProdCP
 
 sProdRootP :: String
 sProdRootP = sProdContainerRootP /? sProdP

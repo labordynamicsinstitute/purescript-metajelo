@@ -198,7 +198,7 @@ readResourceID env prodNode = do
     getResId nd = env.xeval.str nd "."
     getResIdType :: Node -> Effect IdentifierType
     getResIdType nd = do
-      idTypeStr <- env.xeval.str nd "@relatedIdentifierType"
+      idTypeStr <- env.xeval.str nd $ at resIdTypeAT
       readIdentifierType idTypeStr
     combineIdBits :: Maybe (Effect String) -> Maybe (Effect IdentifierType)
       -> Effect (Maybe ResourceID)
@@ -209,15 +209,14 @@ readResourceID env prodNode = do
 
 readResourceType :: ParseEnv -> Node -> Effect ResourceType
 readResourceType env prodNode = do
-  resTypNode <- unsafeSingleNodeValue env prodNode resTypXpath
+  resTypNode <- unsafeSingleNodeValue env prodNode $ xx resTypeP
   descr <- getDescr resTypNode
   resTypGenStr <- getGenType resTypNode
   resTypGen <- readResourceTypeGeneral resTypGenStr
   pure {description: descr, generalType: resTypGen}
   where
-    resTypXpath = "x:resourceType"
     getDescr nd = env.xeval.str nd "."
-    getGenType nd = env.xeval.str nd "@resourceTypeGeneral"
+    getGenType nd = env.xeval.str nd $ at resTypeGenAT
 
 readResourceTypeGeneral :: String -> Effect ResourceTypeGeneral
 readResourceTypeGeneral "Audiovisual" = pure Audiovisual
@@ -241,7 +240,8 @@ readFormats :: ParseEnv -> Node -> Effect (Array Format)
 readFormats env prodNode = do
   formatsRes <- env.xeval.any
     prodNode
-    "x:Format/x:format" RT.ordered_node_snapshot_type
+    (xx formatCP /? formatP)
+    RT.ordered_node_snapshot_type
   formatNodes <- XP.snapshot formatsRes
   sequence $ map getFormat formatNodes
   where

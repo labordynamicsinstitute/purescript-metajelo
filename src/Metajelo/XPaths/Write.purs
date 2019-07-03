@@ -46,6 +46,12 @@ undefined = unsafeCoerce unit
 type DocWriterRoot t = ParseEnv -> t -> Effect Unit
 type DocWriter t = ParseEnv -> Node -> t -> Effect Unit
 
+-- | For convenience, this method assumes that a document with
+-- | the outer layers "above" individual supplementary producs
+-- | exist in the `env` environment (sans perhaps a few attributes which
+-- | will be filled in). This means the starting doc (`blankDoc`) used
+-- | is not valid Metajelo, but successfully running writeRecord on it
+-- | will return a valid Metajelo document.
 writeRecord :: DocWriterRoot MetajeloRecord
 writeRecord env rec = do
  writeIdentifier env rec.identifier
@@ -56,14 +62,32 @@ writeRecord env rec = do
 
 writeIdentifier :: DocWriterRoot Identifier
 writeIdentifier env recId = do
-  recNdMay <- env.xevalRoot.nodeMay idRootP
-  writeNodeMay recId.id recNdMay
-  writeIdentifierType env recId.idType
+  idNd <- unsafeSingleNodeValue env env.recNode (xx idP)
+  writeIdContents idTypeAT env idNd recId
 
-writeIdentifierType :: DocWriterRoot IdentifierType
-writeIdentifierType env idType = do
-  idTypeNdMay <- env.xevalRoot.nodeMay $ idTypeRootAP
-  writeNodeMay (show idType) idTypeNdMay
+writeResourceID :: DocWriter ResourceID
+writeResourceID env prodNd resId = do
+  resIdNd <- map toNode $ createAppendRecEle env prodNd resIdP
+  -- TODO: currently ResourceID uses a different attribute name
+  --     : which makes writeIdContents/ more complicated
+  writeIdContents resIdTypeAT env resIdNd resId
+
+writeInstitutionID :: DocWriter InstitutionID
+writeInstitutionID env prodNd instId = do
+  instIdNd <- map toNode $ createAppendRecEle env prodNd instIdP
+  writeIdContents idTypeAT env instIdNd instId
+
+writeIdContents :: String -> DocWriter Identifier
+writeIdContents atName env parNode id = do
+  setTextContent id.id parNode
+  writeIdentifierType atName env parNode id.idType
+
+writeIdentifierType :: String -> DocWriter IdentifierType
+writeIdentifierType atName env idNode idType = do
+  let idElMay = fromNode idNode
+  _ <- sequence $ idElMay
+    <#> (\idEl -> setAttribute atName (show idType) idEl)
+  pure unit
 
 writeDate :: DocWriterRoot XsdDate
 writeDate env date = do
@@ -79,7 +103,7 @@ writeRelIdentifiers :: DocWriterRoot (NonEmptyArray RelatedIdentifier)
 writeRelIdentifiers env relIds = for_ relIds (\relId -> do
   el <- createAppendRecEle env env.recNode relIdP
   let nd = toNode el
-  writeNodeMay relId.id $ Just nd
+  setTextContent relId.id nd
   setAttribute relIdTypeAT (show relId.idType) el
   setAttribute relTypeAT (show relId.relType) el
 )
@@ -89,7 +113,7 @@ writeSupplementaryProducts env prods = for_ prods (\p -> writeProduct env p)
 
 writeProduct :: DocWriterRoot SupplementaryProduct
 writeProduct env prod = do
-  prodContainer <- unsafeSingleNodeValue env env.recNode sProdContainerP
+  prodContainer <- unsafeSingleNodeValue env env.recNode sProdCP
   prodNd <- map toNode $ createAppendRecEle env env.recNode sProdP
   writeBasicMetadata env prodNd prod.basicMetadata
   _ <- sequence $ prod.resourceID <#> (\resId -> writeResourceID env prodNd resId)
@@ -99,16 +123,30 @@ writeProduct env prod = do
   writeLocation env prodNd prod.location
 
 writeBasicMetadata :: DocWriter BasicMetadata
-writeBasicMetadata env prodNd bm = undefined
-
-writeResourceID :: DocWriter ResourceID
-writeResourceID env prodNd resId = undefined
+writeBasicMetadata env prodNd bm = do
+  bmNd <- map toNode $ createAppendRecEle env prodNd basicMetaP
+  titleNd <- map toNode $ createAppendRecEle env bmNd titleP
+  setTextContent bm.title titleNd
+  creatorNd <- map toNode $ createAppendRecEle env bmNd creatorP
+  setTextContent bm.creator creatorNd
+  pubYearNd <- map toNode $ createAppendRecEle env bmNd pubYearP
+  setTextContent bm.publicationYear pubYearNd
 
 writeResourceType :: DocWriter ResourceType
-writeResourceType env prodNd resType = undefined
+writeResourceType env prodNd resType = do
+  resTypeEl <- createAppendRecEle env prodNd resTypeP
+  setTextContent resType.description $ toNode resTypeEl
+  setAttribute resTypeGenAT (show resType.generalType) resTypeEl
 
 writeFormats :: DocWriter (Array Format)
-writeFormats env prodNd formats = undefined
+writeFormats env prodNd formats = do
+  fContNd <- map toNode $ createAppendRecEle env prodNd formatCP
+  for_ formats (\f -> writeFormat env fContNd f)
+
+writeFormat :: DocWriter Format
+writeFormat env fContNd format = do
+  formEl <- createAppendRecEle env fContNd formatP
+  setTextContent format $ toNode formEl
 
 writeResourceMetadataSource :: DocWriter (Maybe ResourceMetadataSource)
 writeResourceMetadataSource env prodNd resMdSources = undefined
