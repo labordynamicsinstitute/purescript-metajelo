@@ -173,8 +173,7 @@ mainTest = runTest do
       Assert.equal "true" (show true) -- for writing location.versioning
 
       pure unit
-    -- TODO: currently testSkip:
-    testSkip "Metajelo Writing (entire record, round trip)" do
+    test "Metajelo Writing (entire record, round trip)" do
       writeEnv <- liftEffect $ MX.getDefaultParseEnv MXW.blankDoc
       readEnv <- liftEffect $ MX.getDefaultParseEnv TD.metajeloXmlPrefixed
       rec0 <- liftEffect $ MXR.readRecord readEnv

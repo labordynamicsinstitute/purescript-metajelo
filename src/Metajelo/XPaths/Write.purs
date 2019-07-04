@@ -112,7 +112,7 @@ writeSupplementaryProducts env prods = for_ prods (\p -> writeProduct env p)
 
 writeProduct :: DocWriterRoot SupplementaryProduct
 writeProduct env prod = do
-  prodContainer <- unsafeSingleNodeValue env env.recNode sProdCP
+  prodContainer <- unsafeSingleNodeValue env env.recNode (xx sProdCP)
   prodNd <- map toNode $ createAppendRecEle env env.recNode sProdP
   writeBasicMetadata env prodNd prod.basicMetadata
   _ <- sequence $ prod.resourceID <#> (\resId -> writeResourceID env prodNd resId)
@@ -224,5 +224,16 @@ createRecEle env tag = do
   createElementNS (Just env.ns) tagName env.doc
 
 blankDoc :: String
-blankDoc = """TODO
+blankDoc = """<?xml version="1.0" encoding="UTF-8"?>
+<record xmlns:re3="http://www.re3data.org/schema/2-2"
+ xmlns:datacite="http://datacite.org/schema/kernel-4"
+ xmlns="http://ourdomain.cornell.edu/reuse/v.01"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://ourdomain.cornell.edu/reuse/v.01 file:/Users/clagoze/Downloads/metajelo-master/schema/xsd/reproMetadata0.7.xsd">
+    <identifier></identifier>
+    <date></date>
+    <lastModified></lastModified>
+    <supplementaryProducts>
+    </supplementaryProducts>
+</record>
 """
