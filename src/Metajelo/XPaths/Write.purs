@@ -119,7 +119,8 @@ writeProduct env prod = do
   _ <- sequence $ prod.resourceID <#> (\resId -> writeResourceID env prodNd resId)
   writeResourceType env prodNd prod.resourceType
   writeFormats env prodNd prod.format
-  writeResourceMetadataSource env prodNd prod.resourceMetadataSource
+  _ <- sequence $ prod.resourceMetadataSource <#> (\resMDS ->
+    writeResourceMetadataSource env prodNd resMDS)
   writeLocation env prodNd prod.location
 
 writeBasicMetadata :: DocWriter BasicMetadata
@@ -148,11 +149,19 @@ writeFormat env fContNd format = do
   formEl <- createAppendRecEle env fContNd formatP
   setTextContent format $ toNode formEl
 
-writeResourceMetadataSource :: DocWriter (Maybe ResourceMetadataSource)
-writeResourceMetadataSource env prodNd resMdSources = undefined
+writeResourceMetadataSource :: DocWriter ResourceMetadataSource
+writeResourceMetadataSource env prodNd resMdSources = do
+  resMDSEl <- createAppendRecEle env prodNd resMetaSourceP
+  setTextContent (URL.urlToString resMdSources.url) $ toNode resMDSEl
+  setAttribute relTypeAT (show resMdSources.relationType) resMDSEl
+
 
 writeLocation :: DocWriter Location
-writeLocation env prodNd loc = undefined
+writeLocation env prodNd loc = do
+  locEl <- createAppendRecEle env prodNd locP
+  let locNd = toNode locEl
+  writeInstitutionID env locNd loc.institutionID
+  
 
 
 ----- Utility functions below -----
