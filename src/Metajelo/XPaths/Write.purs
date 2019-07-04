@@ -21,8 +21,7 @@ import Metajelo.Types
 import Metajelo.XPaths
 
 import Text.Email.Validate               (toString, validate)
-import URL.Validator                     (URL)
-import URL.Validator                     as URL
+import URL.Validator                     (URL, urlToString)
 import Web.DOM.Document                  (Document, createElementNS, getElementsByTagName,
                                           getElementsByTagNameNS)
 import Web.DOM.DOMParser                 (makeDOMParser, parseXMLFromString)
@@ -147,9 +146,8 @@ writeFormats env prodNd formats = do
 writeResourceMetadataSource :: DocWriter ResourceMetadataSource
 writeResourceMetadataSource env prodNd resMdSources = do
   resMDSEl <- createAppendRecEle env prodNd resMetaSourceP
-  setTextContent (URL.urlToString resMdSources.url) $ toNode resMDSEl
+  setTextContent (urlToString resMdSources.url) $ toNode resMDSEl
   setAttribute relTypeAT (show resMdSources.relationType) resMDSEl
-
 
 writeLocation :: DocWriter Location
 writeLocation env prodNd loc = do
@@ -161,6 +159,9 @@ writeLocation env prodNd loc = do
   _ <- sequence $ loc.superOrganizationName <#> (\sOrg ->
     writeSimpleNode superOrgNameP env locNd sOrg)
   writeInstitutionContact env locNd loc.institutionContact
+  writeInstitutionSustainability env locNd loc.institutionSustainability
+  writeInstitutionPolicies env locNd loc.institutionPolicies
+  writeSimpleNode versioningP env locNd (show loc.versioning)
 
 writeInstitutionContact :: DocWriter InstitutionContact
 writeInstitutionContact env locNd iContact = do
@@ -168,6 +169,28 @@ writeInstitutionContact env locNd iContact = do
   _ <- sequence $ iContact.contactType <#> (\cType ->
     setAttribute instContactTypeAT (show cType) iContEl)
   setTextContent (toString iContact.emailAddress) $ toNode iContEl
+
+writeInstitutionSustainability :: DocWriter InstitutionSustainability
+writeInstitutionSustainability env locNd iSust = do
+  iSustNd <- map toNode $ createAppendRecEle env locNd instSustainP
+  writeSimpleNode missionUrlP env iSustNd $ urlToString iSust.missionStatementURL
+  writeSimpleNode fundingUrlP env iSustNd $ urlToString iSust.fundingStatementURL
+
+writeInstitutionPolicies :: DocWriter (NonEmptyArray InstitutionPolicy)
+writeInstitutionPolicies env locNd iPolicies = do
+  iPolContNd <- map toNode $ createAppendRecEle env locNd instPolicyCP
+  for_ iPolicies (\p -> writeInstitutionPolicy env iPolContNd p)
+
+writeInstitutionPolicy :: DocWriter InstitutionPolicy
+writeInstitutionPolicy env iPolContNd iPol = do
+  iPolEl <- createAppendRecEle env iPolContNd instPolicyP
+  let iPolNd = toNode iPolEl
+  _ <- sequence $ iPol.policyType <#> (\polType ->
+    setAttribute polTypeAT (show polType) iPolEl)
+  setAttribute appliesToProdAT (show iPol.appliesToProduct) iPolEl
+  case iPol.policy of
+    FreeTextPolicy polStr -> writeSimpleNode freeTextPolicyP env iPolNd polStr
+    RefPolicy urlStr -> writeSimpleNode refPolicyP env iPolNd $ urlToString urlStr
 
 ----- Utility functions below -----
 

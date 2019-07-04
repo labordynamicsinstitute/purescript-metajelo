@@ -76,8 +76,8 @@ instContactP = "institutionContact"
 instSustainP :: String
 instSustainP = "institutionSustainability"
 
-instPoliciesP :: String
-instPoliciesP = "institutionPolicies"
+instPolicyCP :: String
+instPolicyCP = "institutionPolicies"
 
 instPolicyP :: String
 instPolicyP = "institutionPolicy"
@@ -120,6 +120,12 @@ formatCP = "Format"
 
 formatP :: String
 formatP = "format"
+
+freeTextPolicyP :: String
+freeTextPolicyP = "freeTextPolicy"
+
+refPolicyP :: String
+refPolicyP = "refPolicy"
 
 resMetaSourceP :: String
 resMetaSourceP = "resourceMetadataSource"

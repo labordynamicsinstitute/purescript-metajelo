@@ -55,7 +55,7 @@ mainTest = runTest do
   suite "XPath Construction" do
     test "institutionPolicies" do
       expected <- pure "x:institutionPolicies/x:institutionPolicy"
-      actual <- pure $ xx MX.instPoliciesP /? MX.instPolicyP
+      actual <- pure $ xx MX.instPolicyCP /? MX.instPolicyP
       Assert.equal expected actual
   suite "Metajelo.XPaths.Read (with version prefix)" do
     test "Metajelo Parsing" do
@@ -170,6 +170,7 @@ mainTest = runTest do
       Assert.equal newRelId.id relId3.id
       Assert.equal newRelId.idType relId3.idType
       Assert.equal newRelId.relType relId3.relType
+      Assert.equal "true" (show true) -- for writing location.versioning
 
       pure unit
     -- TODO: currently testSkip:

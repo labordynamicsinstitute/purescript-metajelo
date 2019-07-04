@@ -1,6 +1,6 @@
 module Metajelo.XPaths.Read where
 
-import Prelude (bind, join, map, not, pure, unit, (#), ($), (<>), (>>=))
+import Prelude (bind, join, map, not, pure, unit, (==), (#), ($), (<>), (>>=))
 
 import Control.Apply                     (lift2)
 import Data.Array                        (head, filter)
@@ -354,7 +354,7 @@ readInstitutionPolicies env locNode = do
     Just narr -> pure narr
     Nothing -> throw "At least one institutionPolicy is required!"
   where
-    polsNodePath = xx instPoliciesP /? instPolicyP
+    polsNodePath = xx instPolicyCP /? instPolicyP
     getInstPolicy :: Node -> Effect InstitutionPolicy
     getInstPolicy polNode = do
       policyChildNodeList <- childNodes polNode
@@ -368,8 +368,8 @@ readInstitutionPolicies env locNode = do
         Nothing -> throw $ "Couldn't find child node of " <> (nodeName polNode)
       policyChildStr <- env.xeval.str policyChild "."
       policy <- case map localName $ fromNode policyChild of
-        Just "freeTextPolicy" -> pure $ FreeTextPolicy policyChildStr
-        Just "refPolicy" ->  case URL.parsePublicURL policyChildStr of
+        Just p | p == freeTextPolicyP -> pure $ FreeTextPolicy policyChildStr
+        Just p | p == refPolicyP ->  case URL.parsePublicURL policyChildStr of
            Left errMsg -> throw $ "In refPolicy URL parsing: " <> errMsg
            Right url -> pure $ RefPolicy url
         Just other -> throw $ "invalid element '" <> other <>
