@@ -20,7 +20,7 @@ import Effect.Exception                  (throw)
 import Metajelo.Types
 import Metajelo.XPaths
 
-import Text.Email.Validate               (validate)
+import Text.Email.Validate               (toString, validate)
 import URL.Validator                     (URL)
 import URL.Validator                     as URL
 import Web.DOM.Document                  (Document, createElementNS, getElementsByTagName,
@@ -142,12 +142,7 @@ writeResourceType env prodNd resType = do
 writeFormats :: DocWriter (Array Format)
 writeFormats env prodNd formats = do
   fContNd <- map toNode $ createAppendRecEle env prodNd formatCP
-  for_ formats (\f -> writeFormat env fContNd f)
-
-writeFormat :: DocWriter Format
-writeFormat env fContNd format = do
-  formEl <- createAppendRecEle env fContNd formatP
-  setTextContent format $ toNode formEl
+  for_ formats (\f -> writeSimpleNode formatP env fContNd f)
 
 writeResourceMetadataSource :: DocWriter ResourceMetadataSource
 writeResourceMetadataSource env prodNd resMdSources = do
@@ -161,10 +156,27 @@ writeLocation env prodNd loc = do
   locEl <- createAppendRecEle env prodNd locP
   let locNd = toNode locEl
   writeInstitutionID env locNd loc.institutionID
-  
+  writeSimpleNode instNameP env locNd loc.institutionName
+  writeSimpleNode instTypeP env locNd (show loc.institutionType)
+  _ <- sequence $ loc.superOrganizationName <#> (\sOrg ->
+    writeSimpleNode superOrgNameP env locNd sOrg)
+  writeInstitutionContact env locNd loc.institutionContact
 
+writeInstitutionContact :: DocWriter InstitutionContact
+writeInstitutionContact env locNd iContact = do
+  iContEl <- createAppendRecEle env locNd instContactP
+  _ <- sequence $ iContact.contactType <#> (\cType ->
+    setAttribute instContactTypeAT (show cType) iContEl)
+  setTextContent (toString iContact.emailAddress) $ toNode iContEl
 
 ----- Utility functions below -----
+
+-- | For creating a simple node with a string value that
+-- | has no other children or attributes.
+writeSimpleNode :: String -> DocWriter String
+writeSimpleNode tag env parentNd str = do
+  newNd <- map toNode $ createAppendRecEle env parentNd tag
+  setTextContent str newNd
 
 writeNodeMay :: String -> Maybe Node -> Effect Unit
 writeNodeMay str ndMay = do
