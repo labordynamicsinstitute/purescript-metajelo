@@ -1,46 +1,42 @@
 module Metajelo.XPaths.Write where
 
-import Prelude (class Show, Unit, bind, discard, join, map, not, pure, show,
-unit, (#), ($), (<>), (>>=), (<#>))
+import Prelude (Unit, bind, discard, map, pure, show,
+unit, ($), (<>), (<#>))
 
-import Control.Apply                     (lift2)
-import Data.Array                        (head, filter)
 import Data.Array.NonEmpty               (NonEmptyArray)
-import Data.Array.NonEmpty               as NA
-import Data.Either                       (Either(..))
-import Data.Foldable                     (find, for_)
-import Data.Maybe                        (Maybe(..), fromMaybe, isJust)
---import Data.Show                         (class Show)
-import Data.String.Utils                 (startsWith)
+import Data.Foldable                     (for_)
+import Data.Maybe                        (Maybe(..))
 import Data.Traversable                  (sequence)
-import Data.XPath                        (class XPathLike, root, at, xx, (/?), (//))
+import Data.XPath                        (xx)
 import Effect                            (Effect)
-import Effect.Exception                  (throw)
 
-import Metajelo.Types
-import Metajelo.XPaths
+import Metajelo.Types                    (BasicMetadata, Format, Identifier
+                                         , IdentifierType, InstitutionContact
+                                         , InstitutionID, InstitutionPolicy
+                                         , InstitutionSustainability, Location
+                                         , MetajeloRecord, Policy(..)
+                                         , RelatedIdentifier, ResourceID
+                                         , ResourceMetadataSource, ResourceType
+                                         , SupplementaryProduct, XsdDate)
 
-import Text.Email.Validate               (toString, validate)
-import URL.Validator                     (URL, urlToString)
-import Web.DOM.Document                  (Document, createElementNS, getElementsByTagName,
-                                          getElementsByTagNameNS)
-import Web.DOM.DOMParser                 (makeDOMParser, parseXMLFromString)
-import Web.DOM.Document.XPath            (NSResolver)
-import Web.DOM.Document.XPath            as XP
-import Web.DOM.Document.XPath.ResultType as RT
-import Web.DOM.Element                   (Element, fromNode, getAttribute
-                                         , localName, prefix, setAttribute, toNode)
-import Web.DOM.HTMLCollection            (item)
-import Web.DOM.Node                      (Node, appendChild, childNodes
-                                         , nodeName, setNodeValue
-                                         , setTextContent)
-import Web.DOM.NodeList                  (toArray)
+import Metajelo.XPaths                   (ParseEnv, appliesToProdAT, basicMetaP
+                                         , creatorP, dateRootP, formatCP, formatP
+                                         , freeTextPolicyP, fundingUrlP, idP, idTypeAT
+                                         , instContactP, instContactTypeAT, instIdP
+                                         , instNameP, instPolicyCP, instPolicyP
+                                         , instSustainP, instTypeP, lastModRootP, locP
+                                         , missionUrlP, polTypeAT, pubYearP, refPolicyP
+                                         , relIdP, relIdTypeAT, relTypeAT, resIdP
+                                         , resIdTypeAT, resMetaSourceP, resTypeGenAT
+                                         , resTypeP, sProdCP, sProdP, superOrgNameP
+                                         , titleP, unsafeSingleNodeValue, versioningP)
 
--- TODO, remove, for undefined:
-import Unsafe.Coerce (unsafeCoerce)
-import Prim.TypeError (QuoteLabel, class Warn)
-undefined :: forall a. Warn (QuoteLabel "undefined in use") => a
-undefined = unsafeCoerce unit
+import Text.Email.Validate               (toString)
+import URL.Validator                     (urlToString)
+import Web.DOM.Document                  (createElementNS)
+import Web.DOM.Element                   (Element, fromNode, prefix, setAttribute
+                                         , toNode)
+import Web.DOM.Node                      (Node, appendChild, setTextContent)
 
 type DocWriterRoot t = ParseEnv -> t -> Effect Unit
 type DocWriter t = ParseEnv -> Node -> t -> Effect Unit
