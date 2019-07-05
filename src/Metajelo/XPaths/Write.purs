@@ -113,7 +113,7 @@ writeSupplementaryProducts env prods = for_ prods (\p -> writeProduct env p)
 writeProduct :: DocWriterRoot SupplementaryProduct
 writeProduct env prod = do
   prodContainer <- unsafeSingleNodeValue env env.recNode (xx sProdCP)
-  prodNd <- map toNode $ createAppendRecEle env env.recNode sProdP
+  prodNd <- map toNode $ createAppendRecEle env prodContainer sProdP
   writeBasicMetadata env prodNd prod.basicMetadata
   _ <- sequence $ prod.resourceID <#> (\resId -> writeResourceID env prodNd resId)
   writeResourceType env prodNd prod.resourceType
@@ -187,7 +187,8 @@ writeInstitutionPolicy env iPolContNd iPol = do
   let iPolNd = toNode iPolEl
   _ <- sequence $ iPol.policyType <#> (\polType ->
     setAttribute polTypeAT (show polType) iPolEl)
-  setAttribute appliesToProdAT (show iPol.appliesToProduct) iPolEl
+  _ <- sequence $ iPol.appliesToProduct <#> (\apToProd ->
+    setAttribute appliesToProdAT (show apToProd) iPolEl)
   case iPol.policy of
     FreeTextPolicy polStr -> writeSimpleNode freeTextPolicyP env iPolNd polStr
     RefPolicy urlStr -> writeSimpleNode refPolicyP env iPolNd $ urlToString urlStr

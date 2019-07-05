@@ -2,6 +2,9 @@ module Test.Data where
 
 import Prelude
 
+import Data.Tuple (Tuple(..))
+import Foreign.Object as FO
+
 fakeXmlns :: String
 fakeXmlns = "http://fake.xmlns.edu"
 
@@ -174,3 +177,9 @@ metajeloXmlPrefixed = """<?xml version="1.0" encoding="UTF-8"?>
     </v.01:supplementaryProducts>
 </v.01:record>
 """
+
+docStringMap :: FO.Object String
+docStringMap = FO.fromFoldable [
+  Tuple "metajeloXml" metajeloXml
+, Tuple "metajeloXmlPrefixed" metajeloXmlPrefixed
+]

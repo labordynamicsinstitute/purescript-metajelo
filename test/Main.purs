@@ -5,6 +5,7 @@ import Prelude
 import Data.Array                        ((!!), length)
 import Data.Array.NonEmpty               as DAN
 import Data.Either                       (fromRight)
+import Data.Foldable                     (for_)
 import Data.Maybe                        (Maybe(..), fromJust, isJust)
 -- import Data.Natural                      (intToNat)
 -- import Debug.Trace                       (traceM)
@@ -14,9 +15,10 @@ import Effect.Aff                        (Aff)
 import Effect.Class                      (liftEffect)
 import Effect.Console                    (logShow)
 -- import Foreign                           (isUndefined, isNull, unsafeToForeign)
+import Foreign.Object                    as FO
 import Partial.Unsafe                    (unsafePartial)
 import Test.Data                         as TD
-import Test.Unit                         (suite, test, testSkip)
+import Test.Unit                         (TestSuite, suite, test, testSkip)
 import Test.Unit.Main                    (runTest)
 import Test.Unit.Assert                  as Assert
 import Text.Email.Validate               as EA
@@ -147,7 +149,6 @@ mainTest = runTest do
   suite "Metajelo.XPaths.Write" do
     test "Metajelo Writing (individual fields)" do
       env <- liftEffect $ MX.getDefaultParseEnv TD.metajeloXml
-      xmlSrlzr <- liftEffect makeXMLSerializer
       -- Testing identifier creation
       idNew <- pure {id: "FooBar", idType: MJ.PURL}
       id0 <- liftEffect $ MXR.readIdentifier env
@@ -163,24 +164,13 @@ mainTest = runTest do
       }
       liftEffect $ MXW.writeRelIdentifiers env $ DAN.singleton newRelId
       relTestRec <- liftEffect $ MXR.readRecord env
-      --curDoc <- liftEffect $ serializeToString env.doc xmlSrlzr -- DEBUG
-      --tlog $ "DEBUG:\n" <> curDoc
       Assert.equal 3 (DAN.length relTestRec.relatedIdentifiers)
       relId3 <- pure $ unsafePartial fromJust $ relTestRec.relatedIdentifiers DAN.!! 2
       Assert.equal newRelId.id relId3.id
       Assert.equal newRelId.idType relId3.idType
       Assert.equal newRelId.relType relId3.relType
       Assert.equal "true" (show true) -- for writing location.versioning
-
-      pure unit
-    test "Metajelo Writing (entire record, round trip)" do
-      writeEnv <- liftEffect $ MX.getDefaultParseEnv MXW.blankDoc
-      readEnv <- liftEffect $ MX.getDefaultParseEnv TD.metajeloXmlPrefixed
-      rec0 <- liftEffect $ MXR.readRecord readEnv
-      liftEffect $ MXW.writeRecord writeEnv rec0
-      rec1 <- liftEffect $ MXR.readRecord writeEnv
-      Assert.assert ("rec0 /= rec1: " <> (show rec0) <> (show rec1)) $ rec0 == rec1
-      pure unit
+    for_ (FO.keys TD.docStringMap) (\k -> roundTripTest k)
 
   suite "namespaced tests" do
     test "metajelo.xml" do
@@ -202,6 +192,21 @@ mainTest = runTest do
       tlog $ "got metajelo id" <> metajeloId
       Assert.equal RT.string_type (XP.resultType metajeloIdRes)
       Assert.equal "OjlTjf" metajeloId
+
+roundTripTest :: String -> TestSuite
+roundTripTest docName =
+  test ("Metajelo Writing (entire record, round trip): " <> docName) do
+    docStr <- unsafePartial $ pure $ fromJust $ FO.lookup docName TD.docStringMap
+    xmlSrlzr <- liftEffect makeXMLSerializer
+    writeEnv <- liftEffect $ MX.getDefaultParseEnv MXW.blankDoc
+    readEnv <- liftEffect $ MX.getDefaultParseEnv docStr
+    rec0 <- liftEffect $ MXR.readRecord readEnv
+    liftEffect $ MXW.writeRecord writeEnv rec0
+    -- curDoc <- liftEffect $ serializeToString writeEnv.doc xmlSrlzr -- DEBUG
+    -- tlog $ "DEBUG:\n" <> curDoc
+    rec1 <- liftEffect $ MXR.readRecord writeEnv
+    Assert.assert ("rec0 /= rec1: " <> (show rec0) <> (show rec1)) $ rec0 == rec1
+
 
 tlog :: forall a. Show a => a -> Aff Unit
 tlog = liftEffect <<< logShow
