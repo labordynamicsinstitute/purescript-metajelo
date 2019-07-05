@@ -5,29 +5,36 @@ import Prelude
 import Data.Array                        ((!!), length)
 import Data.Array.NonEmpty               as DAN
 import Data.Either                       (fromRight)
+import Data.Foldable                     (for_)
 import Data.Maybe                        (Maybe(..), fromJust, isJust)
 -- import Data.Natural                      (intToNat)
 -- import Debug.Trace                       (traceM)
+import Data.XPath                        (class XPathLike, root, xx, (/?), (//))
 import Effect                            (Effect)
 import Effect.Aff                        (Aff)
 import Effect.Class                      (liftEffect)
 import Effect.Console                    (logShow)
 -- import Foreign                           (isUndefined, isNull, unsafeToForeign)
+import Foreign.Object                    as FO
 import Partial.Unsafe                    (unsafePartial)
 import Test.Data                         as TD
-import Test.Unit                         (suite, test)
+import Test.Unit                         (TestSuite, suite, test, testSkip)
 import Test.Unit.Main                    (runTest)
 import Test.Unit.Assert                  as Assert
 import Text.Email.Validate               as EA
 import URL.Validator                     as URL
 import Web.DOM.Document                  (Document, toNode)
 import Web.DOM.DOMParser                 (DOMParser, makeDOMParser, parseXMLFromString)
+import Web.DOM.XMLSerializer             (XMLSerializer, makeXMLSerializer
+                                         , serializeToString)
 import Web.DOM.Document.XPath            as XP
 import Web.DOM.Document.XPath.ResultType as RT
 import Web.DOM.Node                      (Node)
 
 import Metajelo.Types                    as MJ
-import Metajelo.XPaths                   as MXP
+import Metajelo.XPaths                   as MX
+import Metajelo.XPaths.Read              as MXR
+import Metajelo.XPaths.Write             as MXW
 
 parseMetajeloDoc :: DOMParser -> Effect Document
 parseMetajeloDoc dp = unsafePartial $ map fromRight $
@@ -47,26 +54,31 @@ main = do
 
 mainTest :: Effect Unit
 mainTest = runTest do
-  suite "Metajelo.XPaths (with version prefix)" do
+  suite "XPath Construction" do
+    test "institutionPolicies" do
+      expected <- pure "x:institutionPolicies/x:institutionPolicy"
+      actual <- pure $ xx MX.instPolicyCP /? MX.instPolicyP
+      Assert.equal expected actual
+  suite "Metajelo.XPaths.Read (with version prefix)" do
     test "Metajelo Parsing" do
-      parseEnv <- liftEffect $ MXP.getDefaultParseEnv TD.metajeloXmlPrefixed
-      record <- liftEffect $ MXP.readRecord parseEnv
+      parseEnv <- liftEffect $ MX.getDefaultParseEnv TD.metajeloXmlPrefixed
+      record <- liftEffect $ MXR.readRecord parseEnv
       Assert.equal "identifier0" record.identifier.id
       -- Assert.equal MJ.EISSN record.identifier.idType
       -- Assert.equal "2020-04-04" record.date
       -- Assert.equal "2019-05-04Z" record.lastModified
-  suite "Metajelo.XPaths (no prefix)" do
+  suite "Metajelo.XPaths.Read (no prefix)" do
     test "getMetajeloResolver finds xmlns of record" do
       domParser <- liftEffect $ makeDOMParser
 
       metajeloDoc <- liftEffect $ parseRecXmlnsFakeXmlDoc domParser
-      metajeloMay :: Maybe Node <- liftEffect $ MXP.recordOfDoc metajeloDoc
+      metajeloMay :: Maybe Node <- liftEffect $ MX.recordOfDoc metajeloDoc
       Assert.assert "found record element" (isJust metajeloMay)
       metajelo :: Node <- pure $ case metajeloMay of
         Nothing -> toNode metajeloDoc
         Just nd -> nd
 
-      mjNSresolver <- liftEffect $ MXP.getMetajeloResolver metajelo metajeloDoc
+      mjNSresolver <- liftEffect $ MX.getMetajeloResolver metajelo metajeloDoc
 
       retrievedNSMay <- pure $ XP.lookupNamespaceURI mjNSresolver "dummy"
       retrievedNS <- pure $ case retrievedNSMay of
@@ -75,12 +87,12 @@ mainTest = runTest do
 
       Assert.assertFalse
         "defaultMetajeloNS should not equal fakeXmlns or test won't work"
-        (MXP.defaultMetajeloNS == TD.fakeXmlns)
+        (MX.defaultMetajeloNS == TD.fakeXmlns)
       Assert.equal TD.fakeXmlns retrievedNS
 
     test "Metajelo Parsing" do
-      parseEnv <- liftEffect $ MXP.getDefaultParseEnv TD.metajeloXml
-      record <- liftEffect $ MXP.readRecord parseEnv
+      parseEnv <- liftEffect $ MX.getDefaultParseEnv TD.metajeloXml
+      record <- liftEffect $ MXR.readRecord parseEnv
       Assert.equal "OjlTjf" record.identifier.id
       Assert.equal MJ.EISSN record.identifier.idType
       Assert.equal "2020-04-04" record.date
@@ -134,6 +146,31 @@ mainTest = runTest do
       Assert.equal true prod0.location.versioning
       Assert.equal true prod1.location.versioning
       -- pure unit
+  suite "Metajelo.XPaths.Write" do
+    test "Metajelo Writing (individual fields)" do
+      env <- liftEffect $ MX.getDefaultParseEnv TD.metajeloXml
+      -- Testing identifier creation
+      idNew <- pure {id: "FooBar", idType: MJ.PURL}
+      id0 <- liftEffect $ MXR.readIdentifier env
+      liftEffect $ MXW.writeIdentifier env idNew
+      id1 <- liftEffect $ MXR.readIdentifier env
+      Assert.assert ("id0 == idNew: " <> (show id0) <> (show idNew )) $ id0 /= idNew
+      Assert.assert ("id1 /= idNew: " <> (show id1) <> (show idNew )) $ (id1 == idNew)
+      -- Testing related idenitfier creation
+      newRelId :: MJ.RelatedIdentifier <- pure {
+        id : "Dog_Cat_Fox"
+      , idType : MJ.EAN13
+      , relType : MJ.IsPreviousVersionOf
+      }
+      liftEffect $ MXW.writeRelIdentifiers env $ DAN.singleton newRelId
+      relTestRec <- liftEffect $ MXR.readRecord env
+      Assert.equal 3 (DAN.length relTestRec.relatedIdentifiers)
+      relId3 <- pure $ unsafePartial fromJust $ relTestRec.relatedIdentifiers DAN.!! 2
+      Assert.equal newRelId.id relId3.id
+      Assert.equal newRelId.idType relId3.idType
+      Assert.equal newRelId.relType relId3.relType
+      Assert.equal "true" (show true) -- for writing location.versioning
+    for_ (FO.keys TD.docStringMap) (\k -> roundTripTest k)
 
   suite "namespaced tests" do
     test "metajelo.xml" do
@@ -142,7 +179,7 @@ mainTest = runTest do
       metajeloDoc <- liftEffect $ parseMetajeloDoc domParser
       metajelo <- pure $ toNode metajeloDoc
 
-      mjNSresolver <- liftEffect $ MXP.getMetajeloResolver metajelo metajeloDoc
+      mjNSresolver <- liftEffect $ MX.getMetajeloResolver metajelo metajeloDoc
 
       metajeloIdRes <- liftEffect $ XP.evaluate
         "/foo:record/foo:identifier"
@@ -155,6 +192,21 @@ mainTest = runTest do
       tlog $ "got metajelo id" <> metajeloId
       Assert.equal RT.string_type (XP.resultType metajeloIdRes)
       Assert.equal "OjlTjf" metajeloId
+
+roundTripTest :: String -> TestSuite
+roundTripTest docName =
+  test ("Metajelo Writing (entire record, round trip): " <> docName) do
+    docStr <- unsafePartial $ pure $ fromJust $ FO.lookup docName TD.docStringMap
+    xmlSrlzr <- liftEffect makeXMLSerializer
+    writeEnv <- liftEffect $ MX.getDefaultParseEnv MXW.blankDoc
+    readEnv <- liftEffect $ MX.getDefaultParseEnv docStr
+    rec0 <- liftEffect $ MXR.readRecord readEnv
+    liftEffect $ MXW.writeRecord writeEnv rec0
+    -- curDoc <- liftEffect $ serializeToString writeEnv.doc xmlSrlzr -- DEBUG
+    -- tlog $ "DEBUG:\n" <> curDoc
+    rec1 <- liftEffect $ MXR.readRecord writeEnv
+    Assert.assert ("rec0 /= rec1: " <> (show rec0) <> (show rec1)) $ rec0 == rec1
+
 
 tlog :: forall a. Show a => a -> Aff Unit
 tlog = liftEffect <<< logShow

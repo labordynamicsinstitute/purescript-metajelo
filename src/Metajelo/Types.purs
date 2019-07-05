@@ -31,20 +31,22 @@ type MetajeloRecord = {
 , supplementaryProducts :: NonEmptyArray SupplementaryProduct
   -- ^ The link to the set of supplemenary products
 }
---derive instance eqRecord :: Eq MetajeloRecord
+-- derive instance eqRecord :: Eq MetajeloRecord
 
-type Identifier = {
+type BaseId otherField = {
   id :: String
 , idType :: IdentifierType
+| otherField
 }
+
+type Identifier = BaseId()
+
+-- derive instance eqIdentifier :: Eq Identifier
+
 type ResourceID = Identifier
 type InstitutionID = ResourceID
 
-type RelatedIdentifier = {
-  id :: String
-, idType :: IdentifierType
-, relType :: RelationType
-}
+type RelatedIdentifier = BaseId (relType :: RelationType)
 
 -- | The type of the Identifier and RelatedIdentifier.
 data IdentifierType
@@ -66,7 +68,6 @@ data IdentifierType
   | UPC
   | URL
   | URN
---derive instance eqIdentifierType :: Eq IdentifierType
 derive instance genericIdentifierType :: Generic IdentifierType _
 instance showIdentifierType :: Show IdentifierType where
   show ArXiv = "arXiv"
