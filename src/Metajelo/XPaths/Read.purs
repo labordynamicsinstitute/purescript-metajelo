@@ -1,35 +1,36 @@
 module Metajelo.XPaths.Read where
 
-import Prelude (bind, join, map, not, pure, unit, (==), (#), ($), (<>), (>>=))
+import Prelude (bind, map, not, pure, (==), (#), ($), (<>))
 
 import Control.Apply                     (lift2)
 import Data.Array                        (head, filter)
 import Data.Array.NonEmpty               (NonEmptyArray)
 import Data.Array.NonEmpty               as NA
 import Data.Either                       (Either(..))
-import Data.Foldable                     (find)
-import Data.Maybe                        (Maybe(..), fromMaybe, isJust)
+import Data.Maybe                        (Maybe(..))
 import Data.String.Utils                 (startsWith)
 import Data.Traversable                  (sequence)
-import Data.XPath                        (class XPathLike, root, at, xx, (/?), (//))
+import Data.XPath                        (at, xx, (/?))
 import Effect                            (Effect)
 import Effect.Exception                  (throw)
 
-import Metajelo.Types
+import Metajelo.Types                    (BasicMetadata, Format, Identifier
+                                         , IdentifierType(..), InstitutionContact
+                                         , InstitutionContactType(..), InstitutionID
+                                         , InstitutionPolicy, InstitutionSustainability
+                                         , InstitutionType(..), Location, MetajeloRecord
+                                         , Policy(..), PolicyType(..), RelatedIdentifier
+                                         , RelationType(..), ResourceID
+                                         , ResourceMetadataSource, ResourceType
+                                         , ResourceTypeGeneral(..), SupplementaryProduct
+                                         , XsdDate)
 import Metajelo.XPaths
 
 import Text.Email.Validate               (validate)
-import URL.Validator                     (URL)
-import URL.Validator                     as URL
-import Web.DOM.Document                  (Document, getElementsByTagName,
-                                          getElementsByTagNameNS)
-import Web.DOM.DOMParser                 (makeDOMParser, parseXMLFromString)
-import Web.DOM.Document.XPath            (NSResolver)
+import URL.Validator                     (URL, parsePublicURL)
 import Web.DOM.Document.XPath            as XP
 import Web.DOM.Document.XPath.ResultType as RT
 import Web.DOM.Element                   (Element, fromNode, getAttribute, localName)
-import Web.DOM.Element                   as Ele
-import Web.DOM.HTMLCollection            (item)
 import Web.DOM.Node                      (Node, childNodes, nodeName)
 import Web.DOM.NodeList                  (toArray)
 
@@ -369,7 +370,7 @@ readInstitutionPolicies env locNode = do
       policyChildStr <- env.xeval.str policyChild "."
       policy <- case map localName $ fromNode policyChild of
         Just p | p == freeTextPolicyP -> pure $ FreeTextPolicy policyChildStr
-        Just p | p == refPolicyP ->  case URL.parsePublicURL policyChildStr of
+        Just p | p == refPolicyP ->  case parsePublicURL policyChildStr of
            Left errMsg -> throw $ "In refPolicy URL parsing: " <> errMsg
            Right url -> pure $ RefPolicy url
         Just other -> throw $ "invalid element '" <> other <>
@@ -410,7 +411,7 @@ readBooleanMay other = map Just $ readBoolean other
 getUrl :: ParseEnv -> String -> Node -> Effect URL
 getUrl env xpath nd = do
   urlStr <- env.xeval.str nd xpath
-  case URL.parsePublicURL urlStr of
+  case parsePublicURL urlStr of
     Left errMsg -> throw errMsg
     Right url -> pure url
 

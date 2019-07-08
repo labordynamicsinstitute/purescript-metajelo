@@ -8,22 +8,17 @@
 -- | a list of other elements of uniform type.
 module Metajelo.XPaths where
 
-import Prelude (bind, join, map, not, pure, unit, (#), ($), (<>), (>>=))
+import Prelude (bind, join, map, pure, ($), (<>), (>>=))
 
-import Control.Apply                     (lift2)
-import Data.Array                        (head, filter)
 import Data.Array.NonEmpty               (NonEmptyArray)
 import Data.Array.NonEmpty               as NA
 import Data.Either                       (Either(..))
 import Data.Foldable                     (find)
 import Data.Maybe                        (Maybe(..), fromMaybe, isJust)
-import Data.String.Utils                 (startsWith)
 import Data.Traversable                  (sequence)
-import Data.XPath                        (class XPathLike, root, at, xx, (/?), (//))
+import Data.XPath                        (at, root, (//), (/?))
 import Effect                            (Effect)
 import Effect.Exception                  (throw)
-
-import Metajelo.Types
 
 import Text.Email.Validate               (validate)
 import URL.Validator                     (URL)

@@ -6,11 +6,15 @@ module Metajelo.Types where
 import Prelude
 
 import Data.Array.NonEmpty                  (NonEmptyArray)
+import Data.Enum (class BoundedEnum, class Enum, upFromIncluding)
 import Data.Maybe                           (Maybe)
-
 import Data.Generic.Rep                     (class Generic)
+import Data.Generic.Rep.Bounded             as GBounded
 import Data.Generic.Rep.Eq                  (genericEq)
+import Data.Generic.Rep.Enum                as GEnum
+import Data.Generic.Rep.Ord                 as GOrd
 import Data.Generic.Rep.Show                (genericShow)
+import Data.Unfoldable1                     (class Unfoldable1)
 import Text.Email.Validate                  (EmailAddress)
 import URL.Validator                        (URL)
 
@@ -75,6 +79,21 @@ instance showIdentifierType :: Show IdentifierType where
   show other = genericShow other
 instance eqIdentifierType :: Eq IdentifierType where
   eq = genericEq
+instance ordIdentifierType :: Ord IdentifierType where
+  compare x y = GOrd.genericCompare x y
+instance boundedIdentifierType :: Bounded IdentifierType where
+  bottom = GBounded.genericBottom
+  top = GBounded.genericTop
+instance enumIdentifierType :: Enum IdentifierType where
+  pred = GEnum.genericPred
+  succ = GEnum.genericSucc
+instance boundedEnumIdentifierType :: BoundedEnum IdentifierType where
+  cardinality = GEnum.genericCardinality
+  toEnum = GEnum.genericToEnum
+  fromEnum = GEnum.genericFromEnum
+
+allIdentifierTypes :: forall u. Unfoldable1 u => u IdentifierType
+allIdentifierTypes = upFromIncluding bottom
 
 type SupplementaryProduct = {
   basicMetadata :: BasicMetadata
@@ -120,6 +139,22 @@ instance showResourceTypeGeneral :: Show ResourceTypeGeneral where
   show = genericShow
 instance eqResourceTypeGeneral :: Eq ResourceTypeGeneral where
   eq = genericEq
+instance ordResourceTypeGeneral :: Ord ResourceTypeGeneral where
+  compare x y = GOrd.genericCompare x y
+instance boundedResourceTypeGeneral :: Bounded ResourceTypeGeneral where
+  bottom = GBounded.genericBottom
+  top = GBounded.genericTop
+instance enumResourceTypeGeneral :: Enum ResourceTypeGeneral where
+  pred = GEnum.genericPred
+  succ = GEnum.genericSucc
+instance boundedEnumResourceTypeGeneral :: BoundedEnum ResourceTypeGeneral where
+  cardinality = GEnum.genericCardinality
+  toEnum = GEnum.genericToEnum
+  fromEnum = GEnum.genericFromEnum
+
+allResourceTypeGenerals :: forall u. Unfoldable1 u => u ResourceTypeGeneral
+allResourceTypeGenerals = upFromIncluding bottom
+
 
 type ResourceMetadataSource = {
   url :: URL
@@ -159,6 +194,21 @@ instance showRelationType :: Show RelationType where
   show = genericShow
 instance eqRelationType :: Eq RelationType where
   eq = genericEq
+instance ordRelationType :: Ord RelationType where
+  compare x y = GOrd.genericCompare x y
+instance boundedRelationType :: Bounded RelationType where
+  bottom = GBounded.genericBottom
+  top = GBounded.genericTop
+instance enumRelationType :: Enum RelationType where
+  pred = GEnum.genericPred
+  succ = GEnum.genericSucc
+instance boundedEnumRelationType :: BoundedEnum RelationType where
+  cardinality = GEnum.genericCardinality
+  toEnum = GEnum.genericToEnum
+  fromEnum = GEnum.genericFromEnum
+
+allRelationTypes :: forall u. Unfoldable1 u => u RelationType
+allRelationTypes = upFromIncluding bottom
 
 type Location = {
   institutionID :: InstitutionID
@@ -183,6 +233,22 @@ instance showInstitutionType :: Show InstitutionType where
   show Governmental = "governmental"
 instance eqInstitutionType :: Eq InstitutionType where
   eq = genericEq
+instance ordInstitutionType :: Ord InstitutionType where
+  compare x y = GOrd.genericCompare x y
+instance boundedInstitutionType :: Bounded InstitutionType where
+  bottom = GBounded.genericBottom
+  top = GBounded.genericTop
+instance enumInstitutionType :: Enum InstitutionType where
+  pred = GEnum.genericPred
+  succ = GEnum.genericSucc
+instance boundedEnumInstitutionType :: BoundedEnum InstitutionType where
+  cardinality = GEnum.genericCardinality
+  toEnum = GEnum.genericToEnum
+  fromEnum = GEnum.genericFromEnum
+
+allInstitutionTypes :: forall u. Unfoldable1 u => u InstitutionType
+allInstitutionTypes = upFromIncluding bottom
+
 
 type InstitutionContact = {
   emailAddress :: EmailAddress
@@ -193,9 +259,26 @@ ictShow :: InstitutionContactType -> String
 ictShow DataCustodian = "dataCustodian"
 
 data InstitutionContactType = DataCustodian
-derive instance eqInstitutionContactType :: Eq InstitutionContactType
+derive instance genericInstitutionContactType :: Generic InstitutionContactType _
+instance eqInstitutionContactType :: Eq InstitutionContactType where
+  eq = genericEq
 instance showInstitutionContactType :: Show InstitutionContactType where
   show = ictShow
+instance ordInstitutionContactType :: Ord InstitutionContactType where
+  compare x y = GOrd.genericCompare x y
+instance boundedInstitutionContactType :: Bounded InstitutionContactType where
+  bottom = GBounded.genericBottom
+  top = GBounded.genericTop
+instance enumInstitutionContactType :: Enum InstitutionContactType where
+  pred = GEnum.genericPred
+  succ = GEnum.genericSucc
+instance boundedEnumInstitutionContactType :: BoundedEnum InstitutionContactType where
+  cardinality = GEnum.genericCardinality
+  toEnum = GEnum.genericToEnum
+  fromEnum = GEnum.genericFromEnum
+
+allInstitutionContactTypes :: forall u. Unfoldable1 u => u InstitutionContactType
+allInstitutionContactTypes = upFromIncluding bottom
 
 type InstitutionSustainability = {
   missionStatementURL :: URL
@@ -217,6 +300,21 @@ instance showPolicyType :: Show PolicyType where
   show other = genericShow other
 instance eqPolicyType :: Eq PolicyType where
   eq = genericEq
+instance ordPolicyType :: Ord PolicyType where
+  compare x y = GOrd.genericCompare x y
+instance boundedPolicyType :: Bounded PolicyType where
+  bottom = GBounded.genericBottom
+  top = GBounded.genericTop
+instance enumPolicyType :: Enum PolicyType where
+  pred = GEnum.genericPred
+  succ = GEnum.genericSucc
+instance boundedEnumPolicyType :: BoundedEnum PolicyType where
+  cardinality = GEnum.genericCardinality
+  toEnum = GEnum.genericToEnum
+  fromEnum = GEnum.genericFromEnum
+
+allPolicyTypes :: forall u. Unfoldable1 u => u PolicyType
+allPolicyTypes = upFromIncluding bottom
 
 type InstitutionPolicy = {
   policy :: Policy
