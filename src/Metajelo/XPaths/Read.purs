@@ -61,10 +61,10 @@ readIdentifier :: ParseEnv -> Effect Identifier
 readIdentifier env = do
   recId <- env.xevalRoot.str idRootP
   idTypeStr <- env.xevalRoot.str $ idTypeRootAP
-  idType <- readIdentifierType $ idTypeStr
+  idType <- rightOrThrow $ readIdentifierType $ idTypeStr
   pure {id: recId, idType: idType}
 
-readIdentifierType :: String -> Effect IdentifierType
+readIdentifierType :: String -> Either String IdentifierType
 readIdentifierType "ARK" = pure ARK
 readIdentifierType "arXiv" = pure ArXiv
 readIdentifierType "bibcode" = pure Bibcode
@@ -84,7 +84,7 @@ readIdentifierType "UPC" = pure UPC
 readIdentifierType "URL" = pure URL
 readIdentifierType "URN" = pure URN
 readIdentifierType unknown =
-  throw $ "Unknown IdentifierType: '" <> unknown <> "'"
+  Left $ "Unknown IdentifierType: '" <> unknown <> "'"
 
 readDate :: ParseEnv -> Effect XsdDate
 readDate env = env.xevalRoot.str dateRootP
@@ -107,11 +107,11 @@ readRelIdentifiers env = do
     getRelIdType :: Node -> Effect IdentifierType
     getRelIdType nd = do
       idTypeStr <- env.xeval.str nd $ at relIdTypeAT
-      readIdentifierType idTypeStr
+      rightOrThrow $ readIdentifierType idTypeStr
     getRelRelType :: Node -> Effect RelationType
     getRelRelType nd = do
       idRelStr <- env.xeval.str nd $ at relTypeAT
-      readRelationType idRelStr
+      rightOrThrow $ readRelationType idRelStr
     getRelIdentifier :: Node -> Effect RelatedIdentifier
     getRelIdentifier nd = do
       recId <- getRelId nd
@@ -119,7 +119,7 @@ readRelIdentifiers env = do
       relType <- getRelRelType nd
       pure {id: recId, idType: idType, relType: relType}
 
-readRelationType :: String -> Effect RelationType
+readRelationType :: String -> Either String RelationType
 readRelationType "IsCitedBy" = pure IsCitedBy
 readRelationType "Cites" = pure Cites
 readRelationType "IsSupplementTo" = pure IsSupplementTo
@@ -146,7 +146,7 @@ readRelationType "IsReviewedBy" = pure IsReviewedBy
 readRelationType "IsDerivedFrom" = pure IsDerivedFrom
 readRelationType "IsSourceOf" = pure IsSourceOf
 readRelationType unknown =
-  throw $ "Unknown RelationType: '" <> unknown <> "'"
+  Left $ "Unknown RelationType: '" <> unknown <> "'"
 
 
 readSupplementaryProducts :: ParseEnv -> Effect (NonEmptyArray SupplementaryProduct)
@@ -200,7 +200,7 @@ readResourceID env prodNode = do
     getResIdType :: Node -> Effect IdentifierType
     getResIdType nd = do
       idTypeStr <- env.xeval.str nd $ at resIdTypeAT
-      readIdentifierType idTypeStr
+      rightOrThrow $ readIdentifierType idTypeStr
     combineIdBits :: Maybe (Effect String) -> Maybe (Effect IdentifierType)
       -> Effect (Maybe ResourceID)
     combineIdBits idMay idTypeMay = sequence $ do
@@ -213,13 +213,13 @@ readResourceType env prodNode = do
   resTypNode <- unsafeSingleNodeValue env prodNode $ xx resTypeP
   descr <- getDescr resTypNode
   resTypGenStr <- getGenType resTypNode
-  resTypGen <- readResourceTypeGeneral resTypGenStr
+  resTypGen <- rightOrThrow $ readResourceTypeGeneral resTypGenStr
   pure {description: descr, generalType: resTypGen}
   where
     getDescr nd = env.xeval.str nd "."
     getGenType nd = env.xeval.str nd $ at resTypeGenAT
 
-readResourceTypeGeneral :: String -> Effect ResourceTypeGeneral
+readResourceTypeGeneral :: String -> Either String ResourceTypeGeneral
 readResourceTypeGeneral "Audiovisual" = pure Audiovisual
 readResourceTypeGeneral "Dataset" = pure Dataset
 readResourceTypeGeneral "Event" = pure Event
@@ -235,7 +235,7 @@ readResourceTypeGeneral "Text" = pure Text
 readResourceTypeGeneral "Workflow" = pure Workflow
 readResourceTypeGeneral "Other" = pure Other
 readResourceTypeGeneral unknown =
-  throw $ "Unknown ResourceTypeGeneral: '" <> unknown <> "'"
+  Left $ "Unknown ResourceTypeGeneral: '" <> unknown <> "'"
 
 readFormats :: ParseEnv -> Node -> Effect (Array Format)
 readFormats env prodNode = do
@@ -259,7 +259,7 @@ readResourceMetadataSource env prodNode = do
     getRelType :: Node -> Effect RelationType
     getRelType nd = do
       relTypeStr <- env.xeval.str nd $ at relTypeAT
-      readRelationType relTypeStr
+      rightOrThrow $ readRelationType relTypeStr
     combineIdBits :: Maybe (Effect URL) -> Maybe (Effect RelationType)
       -> Effect (Maybe ResourceMetadataSource)
     combineIdBits urlMay relTypeMay = sequence $ do
@@ -279,7 +279,7 @@ readInstitutionID env locNode = do
     getInstIdType :: Node -> Effect IdentifierType
     getInstIdType nd = do
       idTypeStr <- env.xeval.str nd $ at idTypeAT
-      readIdentifierType idTypeStr
+      rightOrThrow $ readIdentifierType idTypeStr
 
 readLocation :: ParseEnv -> Node -> Effect Location
 readLocation env prodNode = do
@@ -287,13 +287,13 @@ readLocation env prodNode = do
   instID <- readInstitutionID env locNode
   instName <- env.xeval.str locNode $ xx instNameP
   instTypeStr <- env.xeval.str locNode $ xx instTypeP
-  instType <- readInstitutionType instTypeStr
+  instType <- rightOrThrow $ readInstitutionType instTypeStr
   superOrgMay <- getSuperOrg locNode
   instContact <- getInstContact locNode
   instSustain <- getInstitutionSustainability locNode
   instPolicies <- readInstitutionPolicies env locNode
   versioningStr <- env.xeval.str locNode $ xx versioningP
-  versioning <- readBoolean versioningStr
+  versioning <- rightOrThrow $ readBoolean versioningStr
   pure {
       institutionID: instID
     , institutionName: instName
@@ -313,7 +313,7 @@ readLocation env prodNode = do
     getInstContact locNode = do
       instContactNode <- unsafeSingleNodeValue env locNode instContactNodeName
       contactTypeStr <- env.xeval.str instContactNode $ at instContactTypeAT
-      contactType <- readInstitutionContactType contactTypeStr
+      contactType <- rightOrThrow $ readInstitutionContactType contactTypeStr
       contactEmailStr <- env.xeval.str instContactNode "."
       contactEmail <- case validate contactEmailStr of
         Left errMsg -> throw $
@@ -333,18 +333,18 @@ readLocation env prodNode = do
         , fundingStatementURL : fsURL
       }
 
-readInstitutionType :: String -> Effect InstitutionType
+readInstitutionType :: String -> Either String InstitutionType
 readInstitutionType "commercial" = pure Commercial
 readInstitutionType "non-profit" = pure NonProfit
 readInstitutionType "governmental" = pure Governmental
 readInstitutionType unknown =
-  throw $ "Unknown InstitutionType: '" <> unknown <> "'"
+  Left $ "Unknown InstitutionType: '" <> unknown <> "'"
 
-readInstitutionContactType :: String -> Effect (Maybe InstitutionContactType)
+readInstitutionContactType :: String -> Either String (Maybe InstitutionContactType)
 readInstitutionContactType "dataCustodian" = pure $ Just DataCustodian
 readInstitutionContactType "" = pure $ Nothing
 readInstitutionContactType unknown =
-  throw $ "Unknown InstitutionContactType: '" <> unknown <> "'"
+  Left $ "Unknown InstitutionContactType: '" <> unknown <> "'"
 
 readInstitutionPolicies :: ParseEnv -> Node -> Effect (NonEmptyArray InstitutionPolicy)
 readInstitutionPolicies env locNode = do
@@ -378,12 +378,12 @@ readInstitutionPolicies env locNode = do
         Nothing -> throw $ "unable to convert policy child Node with name '"
           <>  nodeName policyChild <> "' to an Element"
       policyTypeStr <- env.xeval.str polNode $ at polTypeAT
-      policyType <- readPolicyType policyTypeStr
+      policyType <- rightOrThrow $ readPolicyType policyTypeStr
       appliesToProdStr <- env.xeval.str polNode $ at appliesToProdAT
-      appliesToProd <- readBooleanMay appliesToProdStr
+      appliesToProd <- rightOrThrow $ readBooleanMay appliesToProdStr
       pure {policy: policy, policyType: policyType, appliesToProduct: appliesToProd}
 
-readPolicyType :: String -> Effect (Maybe PolicyType)
+readPolicyType :: String -> Either String (Maybe PolicyType)
 readPolicyType "Access" = pure $ Just Access
 readPolicyType "Collection" = pure $ Just Collection
 readPolicyType "Data" = pure $ Just Data
@@ -394,17 +394,17 @@ readPolicyType "Quality" = pure $ Just Quality
 readPolicyType "Terms of Use" = pure $ Just TermsOfUse
 readPolicyType "" = pure $ Nothing
 readPolicyType unknown =
-  throw $ "Unknown PolicyType: '" <> unknown <> "'"
+  Left $ "Unknown PolicyType: '" <> unknown <> "'"
 
-readBoolean :: String -> Effect Boolean
+readBoolean :: String -> Either String Boolean
 readBoolean "0" = pure false
 readBoolean "1" = pure true
 readBoolean "false" = pure false
 readBoolean "true" = pure true
 readBoolean unknown =
-  throw $ "Invalid xs:boolean value: '" <> unknown <> "'"
+  Left $ "Invalid xs:boolean value: '" <> unknown <> "'"
 
-readBooleanMay :: String -> Effect (Maybe Boolean)
+readBooleanMay :: String -> Either String (Maybe Boolean)
 readBooleanMay "" = pure Nothing
 readBooleanMay other = map Just $ readBoolean other
 
@@ -415,3 +415,8 @@ getUrl env xpath nd = do
     Left errMsg -> throw errMsg
     Right url -> pure url
 
+
+rightOrThrow :: forall a. Either String a -> Effect a
+rightOrThrow ei = case ei of
+  Right val -> pure val
+  Left err -> throw err
