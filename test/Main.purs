@@ -54,6 +54,10 @@ main = do
 
 mainTest :: Effect Unit
 mainTest = runTest do
+  suite "Generics" do
+    test "get all InstitutionContactTypes" do
+      allICTs  <- pure MJ.allInstitutionContactTypes
+      Assert.equal [MJ.DataCustodian] allICTs
   suite "XPath Construction" do
     test "institutionPolicies" do
       expected <- pure "x:institutionPolicies/x:institutionPolicy"
