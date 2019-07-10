@@ -12,6 +12,7 @@
     "url": "git://github.com/labordynamicsinstitute/purescript-metajelo.git"
   },
   "dependencies": {
+    "purescript-enums": "https://github.com/bbarker/purescript-enums.git#smallbounded",
     "purescript-generics-rep": "^6.1.1",
     "purescript-naturals": "^3.0.0",
     "purescript-web-dom-parser": "^6.1.0",
@@ -28,5 +29,8 @@
     "purescript-foreign-object": "^2.0.2",
     "purescript-psci-support": "^4.0.0",
     "purescript-test-unit": "^15.0.0"
+  },
+  "resolutions": {
+    "purescript-enums": "smallbounded"
   }
 }
