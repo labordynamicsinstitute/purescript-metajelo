@@ -20,20 +20,16 @@ import Data.XPath                        (at, root, (//), (/?))
 import Effect                            (Effect)
 import Effect.Exception                  (throw)
 
-import Text.Email.Validate               (validate)
-import URL.Validator                     (URL)
-import URL.Validator                     as URL
 import Web.DOM.Document                  (Document, getElementsByTagName,
                                           getElementsByTagNameNS)
 import Web.DOM.DOMParser                 (makeDOMParser, parseXMLFromString)
 import Web.DOM.Document.XPath            (NSResolver)
 import Web.DOM.Document.XPath            as XP
 import Web.DOM.Document.XPath.ResultType as RT
-import Web.DOM.Element                   (Element, fromNode, getAttribute, localName)
+import Web.DOM.Element                   (Element, fromNode, getAttribute)
 import Web.DOM.Element                   as Ele
 import Web.DOM.HTMLCollection            (item)
-import Web.DOM.Node                      (Node, childNodes, nodeName)
-import Web.DOM.NodeList                  (toArray)
+import Web.DOM.Node                      (Node)
 
 recP :: String
 recP = "record"

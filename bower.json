@@ -12,7 +12,7 @@
     "url": "git://github.com/labordynamicsinstitute/purescript-metajelo.git"
   },
   "dependencies": {
-    "purescript-enums": "https://github.com/bbarker/purescript-enums.git#ff423fe1f994d2ca38fcf5b57b0ce911cfc889cd",
+    "purescript-enums": "https://github.com/bbarker/purescript-enums.git#1979eb74baec39b5e62567948f402b4194230e9f",
     "purescript-generics-rep": "^6.1.1",
     "purescript-naturals": "^3.0.0",
     "purescript-web-dom-parser": "^6.1.0",
@@ -31,6 +31,6 @@
     "purescript-test-unit": "^15.0.0"
   },
   "resolutions": {
-    "purescript-enums": "ff423fe1f994d2ca38fcf5b57b0ce911cfc889cd"
+    "purescript-enums": "1979eb74baec39b5e62567948f402b4194230e9f"
   }
 }

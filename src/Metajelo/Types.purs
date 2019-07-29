@@ -7,8 +7,7 @@ import Prelude
 
 import Data.Array.NonEmpty                  (NonEmptyArray)
 import Data.Enum                            (class BoundedEnum, class Enum
-                                            , class SmallBounded, class SmallBoundedEnum
-                                            , upFromIncluding)
+                                            , class SmallBounded, upFromIncluding)
 import Data.Maybe                           (Maybe)
 import Data.Generic.Rep                     (class Generic)
 import Data.Generic.Rep.Bounded             as GBounded
@@ -94,7 +93,6 @@ instance boundedEnumIdentifierType :: BoundedEnum IdentifierType where
   toEnum = GEnum.genericToEnum
   fromEnum = GEnum.genericFromEnum
 instance smallBoundedIdentifierType :: SmallBounded IdentifierType
-instance smallBoundedEnumIdentifierType :: SmallBoundedEnum IdentifierType
 
 allIdentifierTypes :: forall u. Unfoldable1 u => u IdentifierType
 allIdentifierTypes = upFromIncluding bottom
@@ -156,7 +154,6 @@ instance boundedEnumResourceTypeGeneral :: BoundedEnum ResourceTypeGeneral where
   toEnum = GEnum.genericToEnum
   fromEnum = GEnum.genericFromEnum
 instance smallBoundedResourceTypeGeneral :: SmallBounded ResourceTypeGeneral
-instance smallBoundedEnumResourceTypeGeneral :: SmallBoundedEnum ResourceTypeGeneral
 
 allResourceTypeGenerals :: forall u. Unfoldable1 u => u ResourceTypeGeneral
 allResourceTypeGenerals = upFromIncluding bottom
@@ -213,7 +210,6 @@ instance boundedEnumRelationType :: BoundedEnum RelationType where
   toEnum = GEnum.genericToEnum
   fromEnum = GEnum.genericFromEnum
 instance smallBoundedRelationType :: SmallBounded RelationType
-instance smallBoundedEnumRelationType :: SmallBoundedEnum RelationType
 
 allRelationTypes :: forall u. Unfoldable1 u => u RelationType
 allRelationTypes = upFromIncluding bottom
@@ -254,7 +250,6 @@ instance boundedEnumInstitutionType :: BoundedEnum InstitutionType where
   toEnum = GEnum.genericToEnum
   fromEnum = GEnum.genericFromEnum
 instance smallBoundedInstitutionType :: SmallBounded InstitutionType
-instance smallBoundedEnumInstitutionType :: SmallBoundedEnum InstitutionType
 
 allInstitutionTypes :: forall u. Unfoldable1 u => u InstitutionType
 allInstitutionTypes = upFromIncluding bottom
@@ -287,7 +282,6 @@ instance boundedEnumInstitutionContactType :: BoundedEnum InstitutionContactType
   toEnum = GEnum.genericToEnum
   fromEnum = GEnum.genericFromEnum
 instance smallBoundedInstitutionContactType :: SmallBounded InstitutionContactType
-instance smallBoundedEnumInstitutionContactType :: SmallBoundedEnum InstitutionContactType
 
 allInstitutionContactTypes :: forall u. Unfoldable1 u => u InstitutionContactType
 allInstitutionContactTypes = upFromIncluding bottom
@@ -325,7 +319,6 @@ instance boundedEnumPolicyType :: BoundedEnum PolicyType where
   toEnum = GEnum.genericToEnum
   fromEnum = GEnum.genericFromEnum
 instance smallBoundedPolicyType :: SmallBounded PolicyType
-instance smallBoundedEnumPolicyType :: SmallBoundedEnum PolicyType
 
 allPolicyTypes :: forall u. Unfoldable1 u => u PolicyType
 allPolicyTypes = upFromIncluding bottom
