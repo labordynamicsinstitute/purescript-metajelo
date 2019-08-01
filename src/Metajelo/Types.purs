@@ -49,7 +49,7 @@ type Identifier = BaseId()
 -- derive instance eqIdentifier :: Eq Identifier
 
 type ResourceID = Identifier
-type InstitutionID = ResourceID
+type InstitutionID = Identifier
 
 type RelatedIdentifier = BaseId (relType :: RelationType)
 
