@@ -18,7 +18,7 @@
     "purescript-web-dom-parser": "^6.1.0",
     "purescript-email-validate": "^5.0.0",
     "purescript-stringutils": "^0.0.8",
-    "purescript-url-validator": "^1.1.0",
+    "purescript-url-validator": "^2.1.0",
     "purescript-web-dom": "^3.0.0",
     "purescript-web-dom-xpath": "^1.2.1",
     "purescript-xpath-like": "^3.0.0"

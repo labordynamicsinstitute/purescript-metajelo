@@ -6,6 +6,8 @@ unit, ($), (<>), (<#>))
 import Data.Array.NonEmpty               (NonEmptyArray)
 import Data.Foldable                     (for_)
 import Data.Maybe                        (Maybe(..))
+import Data.String.NonEmpty              (NonEmptyString)
+import Data.String.NonEmpty              as NES
 import Data.Traversable                  (sequence)
 import Data.XPath                        (xx)
 import Effect                            (Effect)
@@ -18,7 +20,6 @@ import Metajelo.Types                    (BasicMetadata, Format, Identifier
                                          , RelatedIdentifier, ResourceID
                                          , ResourceMetadataSource, ResourceType
                                          , SupplementaryProduct, XsdDate)
-
 import Metajelo.XPaths                   (ParseEnv, appliesToProdAT, basicMetaP
                                          , creatorP, dateRootP, formatCP, formatP
                                          , freeTextPolicyP, fundingUrlP, idP, idTypeAT
@@ -30,13 +31,15 @@ import Metajelo.XPaths                   (ParseEnv, appliesToProdAT, basicMetaP
                                          , resIdTypeAT, resMetaSourceP, resTypeGenAT
                                          , resTypeP, sProdCP, sProdP, superOrgNameP
                                          , titleP, unsafeSingleNodeValue, versioningP)
-
 import Text.Email.Validate               (toString)
-import URL.Validator                     (urlToString)
+import Text.URL.Validate                 (urlToNEString, urlToString)
 import Web.DOM.Document                  (createElementNS)
 import Web.DOM.Element                   (Element, fromNode, prefix, setAttribute
                                          , toNode)
 import Web.DOM.Node                      (Node, appendChild, setTextContent)
+
+toStr :: NonEmptyString -> String
+toStr = NES.toString
 
 type DocWriterRoot t = ParseEnv -> t -> Effect Unit
 type DocWriter t = ParseEnv -> Node -> t -> Effect Unit
@@ -74,7 +77,7 @@ writeInstitutionID env prodNd instId = do
 
 writeIdContents :: String -> DocWriter Identifier
 writeIdContents atName env parNode id = do
-  setTextContent id.id parNode
+  setTextContent (toStr id.id) parNode
   writeIdentifierType atName env parNode id.idType
 
 writeIdentifierType :: String -> DocWriter IdentifierType
@@ -98,7 +101,7 @@ writeRelIdentifiers :: DocWriterRoot (NonEmptyArray RelatedIdentifier)
 writeRelIdentifiers env relIds = for_ relIds (\relId -> do
   el <- createAppendRecEle env env.recNode relIdP
   let nd = toNode el
-  setTextContent relId.id nd
+  setTextContent (toStr relId.id) nd
   setAttribute relIdTypeAT (show relId.idType) el
   setAttribute relTypeAT (show relId.relType) el
 )
@@ -122,11 +125,11 @@ writeBasicMetadata :: DocWriter BasicMetadata
 writeBasicMetadata env prodNd bm = do
   bmNd <- map toNode $ createAppendRecEle env prodNd basicMetaP
   titleNd <- map toNode $ createAppendRecEle env bmNd titleP
-  setTextContent bm.title titleNd
+  setTextContent (toStr bm.title) titleNd
   creatorNd <- map toNode $ createAppendRecEle env bmNd creatorP
-  setTextContent bm.creator creatorNd
+  setTextContent (toStr bm.creator) creatorNd
   pubYearNd <- map toNode $ createAppendRecEle env bmNd pubYearP
-  setTextContent bm.publicationYear pubYearNd
+  setTextContent (toStr bm.publicationYear) pubYearNd
 
 writeResourceType :: DocWriter ResourceType
 writeResourceType env prodNd resType = do
@@ -151,13 +154,13 @@ writeLocation env prodNd loc = do
   let locNd = toNode locEl
   writeInstitutionID env locNd loc.institutionID
   writeSimpleNode instNameP env locNd loc.institutionName
-  writeSimpleNode instTypeP env locNd (show loc.institutionType)
+  writeSimpleNode' instTypeP env locNd (show loc.institutionType)
   _ <- sequence $ loc.superOrganizationName <#> (\sOrg ->
     writeSimpleNode superOrgNameP env locNd sOrg)
   writeInstitutionContact env locNd loc.institutionContact
   writeInstitutionSustainability env locNd loc.institutionSustainability
   writeInstitutionPolicies env locNd loc.institutionPolicies
-  writeSimpleNode versioningP env locNd (show loc.versioning)
+  writeSimpleNode' versioningP env locNd (show loc.versioning)
 
 writeInstitutionContact :: DocWriter InstitutionContact
 writeInstitutionContact env locNd iContact = do
@@ -169,8 +172,8 @@ writeInstitutionContact env locNd iContact = do
 writeInstitutionSustainability :: DocWriter InstitutionSustainability
 writeInstitutionSustainability env locNd iSust = do
   iSustNd <- map toNode $ createAppendRecEle env locNd instSustainP
-  writeSimpleNode missionUrlP env iSustNd $ urlToString iSust.missionStatementURL
-  writeSimpleNode fundingUrlP env iSustNd $ urlToString iSust.fundingStatementURL
+  writeSimpleNode missionUrlP env iSustNd $ urlToNEString iSust.missionStatementURL
+  writeSimpleNode fundingUrlP env iSustNd $ urlToNEString iSust.fundingStatementURL
 
 writeInstitutionPolicies :: DocWriter (NonEmptyArray InstitutionPolicy)
 writeInstitutionPolicies env locNd iPolicies = do
@@ -187,20 +190,23 @@ writeInstitutionPolicy env iPolContNd iPol = do
     setAttribute appliesToProdAT (show apToProd) iPolEl)
   case iPol.policy of
     FreeTextPolicy polStr -> writeSimpleNode freeTextPolicyP env iPolNd polStr
-    RefPolicy urlStr -> writeSimpleNode refPolicyP env iPolNd $ urlToString urlStr
+    RefPolicy urlStr -> writeSimpleNode refPolicyP env iPolNd $ urlToNEString urlStr
 
 ----- Utility functions below -----
 
 -- | For creating a simple node with a string value that
 -- | has no other children or attributes.
-writeSimpleNode :: String -> DocWriter String
-writeSimpleNode tag env parentNd str = do
+writeSimpleNode :: String -> DocWriter NonEmptyString
+writeSimpleNode tag env parentNd str = writeSimpleNode' tag env parentNd $ toStr str
+
+writeSimpleNode' :: String -> DocWriter String
+writeSimpleNode' tag env parentNd str = do
   newNd <- map toNode $ createAppendRecEle env parentNd tag
   setTextContent str newNd
 
-writeNodeMay :: String -> Maybe Node -> Effect Unit
+writeNodeMay :: NonEmptyString -> Maybe Node -> Effect Unit
 writeNodeMay str ndMay = do
-  _ <- sequence $ map (setTextContent str) ndMay
+  _ <- sequence $ map (setTextContent $ toStr str) ndMay
   pure unit
 
 createAppendRecEle :: ParseEnv -> Node -> String -> Effect Element

@@ -7,6 +7,7 @@ import Data.Array.NonEmpty               as DAN
 import Data.Either                       (fromRight)
 import Data.Foldable                     (for_)
 import Data.Maybe                        (Maybe(..), fromJust, isJust)
+import Data.String.NonEmpty              (NonEmptyString, toString, unsafeFromString)
 -- import Data.Natural                      (intToNat)
 -- import Debug.Trace                       (traceM)
 import Data.XPath                        (class XPathLike, root, xx, (/?), (//))
@@ -18,11 +19,11 @@ import Effect.Console                    (logShow)
 import Foreign.Object                    as FO
 import Partial.Unsafe                    (unsafePartial)
 import Test.Data                         as TD
-import Test.Unit                         (TestSuite, suite, test, testSkip)
+import Test.Unit                         (Test, TestSuite, suite, test, testSkip)
 import Test.Unit.Main                    (runTest)
 import Test.Unit.Assert                  as Assert
 import Text.Email.Validate               as EA
-import URL.Validator                     as URL
+import Text.URL.Validate                 as URL
 import Web.DOM.Document                  (Document, toNode)
 import Web.DOM.DOMParser                 (DOMParser, makeDOMParser, parseXMLFromString)
 import Web.DOM.XMLSerializer             (XMLSerializer, makeXMLSerializer
@@ -48,6 +49,9 @@ parseRecXmlnsFakeXmlDoc :: DOMParser -> Effect Document
 parseRecXmlnsFakeXmlDoc dp = unsafePartial $ map fromRight $
   parseXMLFromString TD.recXmlnsFakeXml dp
 
+fromStrUnsafe :: String -> NonEmptyString
+fromStrUnsafe s = unsafePartial $ unsafeFromString s
+
 main :: Effect Unit
 main = do
   mainTest
@@ -67,7 +71,7 @@ mainTest = runTest do
     test "Metajelo Parsing" do
       parseEnv <- liftEffect $ MX.getDefaultParseEnv TD.metajeloXmlPrefixed
       record <- liftEffect $ MXR.readRecord parseEnv
-      Assert.equal "identifier0" record.identifier.id
+      assertNESEq "identifier0" record.identifier.id
       -- Assert.equal MJ.EISSN record.identifier.idType
       -- Assert.equal "2020-04-04" record.date
       -- Assert.equal "2019-05-04Z" record.lastModified
@@ -97,13 +101,13 @@ mainTest = runTest do
     test "Metajelo Parsing" do
       parseEnv <- liftEffect $ MX.getDefaultParseEnv TD.metajeloXml
       record <- liftEffect $ MXR.readRecord parseEnv
-      Assert.equal "OjlTjf" record.identifier.id
+      assertNESEq "OjlTjf" record.identifier.id
       Assert.equal MJ.EISSN record.identifier.idType
-      Assert.equal "2020-04-04" record.date
-      Assert.equal "2019-05-04Z" record.lastModified
+      assertNESEq "2020-04-04" record.date
+      assertNESEq "2019-05-04Z" record.lastModified
       Assert.equal 2 (DAN.length record.relatedIdentifiers)
       relId1 <- pure $ unsafePartial fromJust $ record.relatedIdentifiers DAN.!! 1
-      Assert.equal "sm3AM1NbOSx" relId1.id
+      assertNESEq "sm3AM1NbOSx" relId1.id
       Assert.equal MJ.PMID  relId1.idType
       Assert.equal MJ.IsNewVersionOf relId1.relType
       prod0 <- pure $ unsafePartial $ fromJust $
@@ -112,10 +116,10 @@ mainTest = runTest do
         record.supplementaryProducts DAN.!! 1
       prod0resId <- pure $ unsafePartial $ fromJust prod0.resourceID
       Assert.equal MJ.IGSN prod0resId.idType
-      Assert.equal "bW8w2m5bzZ0WoKj7SBI_" prod0resId.id
-      Assert.equal "niBi6PpDgbhM3" prod0.basicMetadata.title
-      Assert.equal "cbK1" prod0.basicMetadata.creator
-      Assert.equal "2019-08-11Z" prod0.basicMetadata.publicationYear
+      assertNESEq "bW8w2m5bzZ0WoKj7SBI_" prod0resId.id
+      assertNESEq "niBi6PpDgbhM3" prod0.basicMetadata.title
+      assertNESEq "cbK1" prod0.basicMetadata.creator
+      assertNESEq "2019-08-11Z" prod0.basicMetadata.publicationYear
       Assert.equal MJ.Event prod0.resourceType.generalType
       Assert.equal "cNMAxYjF0j0k" prod0.resourceType.description
       prod0mdSource <- pure $ unsafePartial $ fromJust prod0.resourceMetadataSource
@@ -123,12 +127,13 @@ mainTest = runTest do
       Assert.equal MJ.HasMetadata prod0mdSource.relationType
       Assert.equal 2 (length prod0.format)
       prod0format1 <- pure $ unsafePartial fromJust $ prod0.format !! 1
-      Assert.equal "Vf5ti6" prod0format1
+      assertNESEq "Vf5ti6" prod0format1
       Assert.equal MJ.ARK prod0.location.institutionID.idType
-      Assert.equal "institutionID0" prod0.location.institutionID.id
-      Assert.equal "pKhb" prod0.location.institutionName
+      assertNESEq "institutionID0" prod0.location.institutionID.id
+      assertNESEq "pKhb" prod0.location.institutionName
       Assert.equal MJ.Commercial prod0.location.institutionType
-      Assert.equal (Just "DHv5J4LquWfN42iu1a") prod0.location.superOrganizationName
+      Assert.equal (Just "DHv5J4LquWfN42iu1a") $
+        toString <$> prod0.location.superOrganizationName
       Assert.equal (Just MJ.DataCustodian) prod0.location.institutionContact.contactType
       Assert.equal "foo@baz.edu" $ EA.toString prod0.location.institutionContact.emailAddress
       Assert.equal "http://akbNcujU.fz/"
@@ -144,7 +149,7 @@ mainTest = runTest do
       Assert.equal (Just false) prod0pol0.appliesToProduct
       prod0pol1 <- pure $ unsafePartial fromJust $
         prod0.location.institutionPolicies DAN.!! 1
-      Assert.equal (MJ.FreeTextPolicy "fqxRlcso3") prod0pol1.policy
+      Assert.equal (MJ.FreeTextPolicy $ fromStrUnsafe "fqxRlcso3") prod0pol1.policy
       Assert.equal (Just MJ.Preservation) prod0pol1.policyType
       Assert.equal (Just true) prod0pol1.appliesToProduct
       Assert.equal true prod0.location.versioning
@@ -154,7 +159,7 @@ mainTest = runTest do
     test "Metajelo Writing (individual fields)" do
       env <- liftEffect $ MX.getDefaultParseEnv TD.metajeloXml
       -- Testing identifier creation
-      idNew <- pure {id: "FooBar", idType: MJ.PURL}
+      idNew <- pure {id: fromStrUnsafe "FooBar", idType: MJ.PURL}
       id0 <- liftEffect $ MXR.readIdentifier env
       liftEffect $ MXW.writeIdentifier env idNew
       id1 <- liftEffect $ MXR.readIdentifier env
@@ -162,7 +167,7 @@ mainTest = runTest do
       Assert.assert ("id1 /= idNew: " <> (show id1) <> (show idNew )) $ (id1 == idNew)
       -- Testing related idenitfier creation
       newRelId :: MJ.RelatedIdentifier <- pure {
-        id : "Dog_Cat_Fox"
+        id : fromStrUnsafe "Dog_Cat_Fox"
       , idType : MJ.EAN13
       , relType : MJ.IsPreviousVersionOf
       }
@@ -215,3 +220,5 @@ roundTripTest docName =
 tlog :: forall a. Show a => a -> Aff Unit
 tlog = liftEffect <<< logShow
 
+assertNESEq :: String -> NonEmptyString -> Test
+assertNESEq exp act = Assert.equal exp $ toString act
