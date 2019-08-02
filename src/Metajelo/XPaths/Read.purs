@@ -1,6 +1,6 @@
 module Metajelo.XPaths.Read where
 
-import Prelude (bind, map, not, pure, (==), (#), ($), (<>))
+import Prelude (bind, join, map, not, pure, (==), (#), ($), (<>), (<#>))
 
 import Control.Apply                     (lift2)
 import Data.Array                        (head, filter)
@@ -8,6 +8,8 @@ import Data.Array.NonEmpty               (NonEmptyArray)
 import Data.Array.NonEmpty               as NA
 import Data.Either                       (Either(..))
 import Data.Maybe                        (Maybe(..))
+import Data.String                       (trim)
+import Data.String.NonEmpty              (NonEmptyString, fromString)
 import Data.String.Utils                 (startsWith)
 import Data.Traversable                  (sequence)
 import Data.XPath                        (at, xx, (/?))
@@ -30,17 +32,9 @@ import Text.Email.Validate               (validate)
 import URL.Validator                     (URL, parsePublicURL)
 import Web.DOM.Document.XPath            as XP
 import Web.DOM.Document.XPath.ResultType as RT
-import Web.DOM.Element                   (Element, fromNode, getAttribute, localName)
+import Web.DOM.Element                   (fromNode, localName)
 import Web.DOM.Node                      (Node, childNodes, nodeName)
 import Web.DOM.NodeList                  (toArray)
-
-elemXmlns :: Element -> Effect (Maybe String)
-elemXmlns elem = getAttribute "xmlns" elem
-
-nodeXmlns :: Node -> Effect (Maybe String)
-nodeXmlns node = case fromNode node of
-  Nothing -> pure Nothing
-  Just elem -> elemXmlns elem
 
 readRecord :: ParseEnv -> Effect MetajeloRecord
 readRecord env = do
@@ -57,9 +51,17 @@ readRecord env = do
     , supplementaryProducts: recProds
   }
 
+readNonEmptyString :: String -> String -> Either String NonEmptyString
+readNonEmptyString field str =
+  let nesMay = fromString $ trim str in
+  case nesMay of
+    Nothing -> Left $ "Empty string found for " <> field
+    Just nes -> Right nes
+
 readIdentifier :: ParseEnv -> Effect Identifier
 readIdentifier env = do
-  recId <- env.xevalRoot.str idRootP
+  recIdStr <- env.xevalRoot.str idRootP
+  recId <- rightOrThrow $ readNonEmptyString "Identifier" recIdStr
   idTypeStr <- env.xevalRoot.str $ idTypeRootAP
   idType <- rightOrThrow $ readIdentifierType $ idTypeStr
   pure {id: recId, idType: idType}
@@ -87,10 +89,14 @@ readIdentifierType unknown =
   Left $ "Unknown IdentifierType: '" <> unknown <> "'"
 
 readDate :: ParseEnv -> Effect XsdDate
-readDate env = env.xevalRoot.str dateRootP
+readDate env = do
+  dateStr <- env.xevalRoot.str dateRootP
+  rightOrThrow $ readNonEmptyString "Date" dateStr
 
 readModDate :: ParseEnv -> Effect XsdDate
-readModDate env = env.xevalRoot.str lastModRootP
+readModDate env = do
+  dateStr <- env.xevalRoot.str lastModRootP
+  rightOrThrow $ readNonEmptyString "ModDate" dateStr
 
 readRelIdentifiers :: ParseEnv -> Effect (NonEmptyArray RelatedIdentifier)
 readRelIdentifiers env = do
@@ -102,8 +108,10 @@ readRelIdentifiers env = do
     Just narr -> pure narr
     Nothing -> throw "At least one relatedIdentifier is required!"
   where
-    getRelId :: Node -> Effect String
-    getRelId nd = env.xeval.str nd "."
+    getRelId :: Node -> Effect NonEmptyString
+    getRelId nd = do
+      relIdStr <- env.xeval.str nd "."
+      rightOrThrow $ readNonEmptyString "RelatedIdentifier" relIdStr
     getRelIdType :: Node -> Effect IdentifierType
     getRelIdType nd = do
       idTypeStr <- env.xeval.str nd $ at relIdTypeAT
@@ -178,15 +186,19 @@ readSupplementaryProducts env = do
 readBasicMetadata :: ParseEnv -> Node -> Effect BasicMetadata
 readBasicMetadata env prodNode = do
   basicMetaNode <- unsafeSingleNodeValue env prodNode basicMetaXpath
-  title <- getTitle basicMetaNode
-  creator <- getCreator basicMetaNode
+  titleStr <- getTitle basicMetaNode
+  creatorStr <- getCreator basicMetaNode
+  title <- rightOrThrow $ readNonEmptyString "Title" titleStr
+  creator <- rightOrThrow $ readNonEmptyString "Creator" creatorStr
   pubYear <- getPublicationYear basicMetaNode
   pure {title: title, creator: creator, publicationYear: pubYear}
   where
     basicMetaXpath = xx basicMetaP
     getTitle nd = env.xeval.str nd $ xx titleP
     getCreator nd = env.xeval.str nd $ xx creatorP
-    getPublicationYear nd = env.xeval.str nd $ xx pubYearP
+    getPublicationYear nd = do
+      pyStr <- env.xeval.str nd $ xx pubYearP
+      rightOrThrow $ readNonEmptyString "PubYear" pyStr
 
 readResourceID :: ParseEnv -> Node -> Effect (Maybe ResourceID)
 readResourceID env prodNode = do
@@ -195,13 +207,15 @@ readResourceID env prodNode = do
   resIdTypeMay <- pure $ map getResIdType resIdNodeMay
   combineIdBits resIdMay resIdTypeMay
   where
-    getResId :: Node -> Effect String
-    getResId nd = env.xeval.str nd "."
+    getResId :: Node -> Effect NonEmptyString
+    getResId nd = do
+      resIdStr <- env.xeval.str nd "."
+      rightOrThrow $ readNonEmptyString "ResourceID" resIdStr
     getResIdType :: Node -> Effect IdentifierType
     getResIdType nd = do
       idTypeStr <- env.xeval.str nd $ at resIdTypeAT
       rightOrThrow $ readIdentifierType idTypeStr
-    combineIdBits :: Maybe (Effect String) -> Maybe (Effect IdentifierType)
+    combineIdBits :: Maybe (Effect NonEmptyString) -> Maybe (Effect IdentifierType)
       -> Effect (Maybe ResourceID)
     combineIdBits idMay idTypeMay = sequence $ do
       idEff <- idMay
@@ -247,7 +261,9 @@ readFormats env prodNode = do
   sequence $ map getFormat formatNodes
   where
     getFormat:: Node -> Effect Format
-    getFormat nd = env.xeval.str nd "."
+    getFormat nd = do
+      fmtStr <- env.xeval.str nd "."
+      rightOrThrow $ readNonEmptyString "Format" fmtStr
 
 readResourceMetadataSource :: ParseEnv -> Node -> Effect (Maybe ResourceMetadataSource)
 readResourceMetadataSource env prodNode = do
@@ -274,8 +290,10 @@ readInstitutionID env locNode = do
   instIdType <- getInstIdType instIdNode
   pure {id: instId, idType: instIdType}
   where
-    getInstId :: Node -> Effect String
-    getInstId nd = env.xeval.str nd "."
+    getInstId :: Node -> Effect NonEmptyString
+    getInstId nd = do
+      idStr <- env.xeval.str nd "."
+      rightOrThrow $ readNonEmptyString "InstitutionID" idStr
     getInstIdType :: Node -> Effect IdentifierType
     getInstIdType nd = do
       idTypeStr <- env.xeval.str nd $ at idTypeAT
@@ -285,7 +303,8 @@ readLocation :: ParseEnv -> Node -> Effect Location
 readLocation env prodNode = do
   locNode <- unsafeSingleNodeValue env prodNode $ xx locP
   instID <- readInstitutionID env locNode
-  instName <- env.xeval.str locNode $ xx instNameP
+  instName <- join $ (env.xeval.str locNode $ xx instNameP) <#>
+    (\str -> rightOrThrow $ readNonEmptyString "Institution Name" str)
   instTypeStr <- env.xeval.str locNode $ xx instTypeP
   instType <- rightOrThrow $ readInstitutionType instTypeStr
   superOrgMay <- getSuperOrg locNode
@@ -305,10 +324,14 @@ readLocation env prodNode = do
     , versioning: versioning
   }
   where
-    getSuperOrg :: Node -> Effect (Maybe String)
+    getSuperOrg :: Node -> Effect (Maybe NonEmptyString)
     getSuperOrg locNode = do
-      suorOrgNodeMay <- env.xeval.nodeMay locNode (xx superOrgNameP)
-      sequence $ map (\nd -> env.xeval.str nd ".") suorOrgNodeMay
+      suprOrgNodeMay <- env.xeval.nodeMay locNode (xx superOrgNameP)
+      sequence $ map (\nd -> sOrgFromStr $ env.xeval.str nd ".") suprOrgNodeMay
+    sOrgFromStr :: Effect String -> Effect NonEmptyString
+    sOrgFromStr efStr = do
+      str <- efStr
+      rightOrThrow $ readNonEmptyString "SuperOrg" str
     getInstContact :: Node -> Effect InstitutionContact
     getInstContact locNode = do
       instContactNode <- unsafeSingleNodeValue env locNode instContactNodeName
@@ -368,9 +391,10 @@ readInstitutionPolicies env locNode = do
         Just pc -> pure pc
         Nothing -> throw $ "Couldn't find child node of " <> (nodeName polNode)
       policyChildStr <- env.xeval.str policyChild "."
+      policyChildNes <- rightOrThrow $ readNonEmptyString "Policy" policyChildStr
       policy <- case map localName $ fromNode policyChild of
-        Just p | p == freeTextPolicyP -> pure $ FreeTextPolicy policyChildStr
-        Just p | p == refPolicyP ->  case parsePublicURL policyChildStr of
+        Just p | p == freeTextPolicyP -> pure $ FreeTextPolicy policyChildNes
+        Just p | p == refPolicyP -> case parsePublicURL policyChildStr of
            Left errMsg -> throw $ "In refPolicy URL parsing: " <> errMsg
            Right url -> pure $ RefPolicy url
         Just other -> throw $ "invalid element '" <> other <>

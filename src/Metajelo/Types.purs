@@ -15,14 +15,15 @@ import Data.Generic.Rep.Eq                  (genericEq)
 import Data.Generic.Rep.Enum                as GEnum
 import Data.Generic.Rep.Ord                 as GOrd
 import Data.Generic.Rep.Show                (genericShow)
+import Data.String.NonEmpty                 (NonEmptyString)
 import Data.Unfoldable1                     (class Unfoldable1)
 import Text.Email.Validate                  (EmailAddress)
 import URL.Validator                        (URL)
 
 -- | Stand in for xs:date
-type XsdDate = String
+type XsdDate = NonEmptyString
 
-type Format = String
+type Format = NonEmptyString
 
 -- | metadata about the publication and links to unlimited
 -- | number of suppementary products
@@ -39,7 +40,7 @@ type MetajeloRecord = {
 -- derive instance eqRecord :: Eq MetajeloRecord
 
 type BaseId otherField = {
-  id :: String
+  id :: NonEmptyString
 , idType :: IdentifierType
 | otherField
 }
@@ -108,8 +109,8 @@ type SupplementaryProduct = {
 --derive instance eqSupplementaryProduct :: Eq SupplementaryProduct
 
 type BasicMetadata = {
-  title :: String
-, creator :: String
+  title :: NonEmptyString
+, creator :: NonEmptyString
 , publicationYear :: XsdDate
 }
 
@@ -216,9 +217,9 @@ allRelationTypes = upFromIncluding bottom
 
 type Location = {
   institutionID :: InstitutionID
-, institutionName :: String
+, institutionName :: NonEmptyString
 , institutionType :: InstitutionType
-, superOrganizationName :: Maybe String
+, superOrganizationName :: Maybe NonEmptyString
 , institutionContact :: InstitutionContact
 , institutionSustainability :: InstitutionSustainability
 , institutionPolicies :: NonEmptyArray InstitutionPolicy
@@ -330,7 +331,7 @@ type InstitutionPolicy = {
 }
 
 data Policy
-  = FreeTextPolicy String
+  = FreeTextPolicy NonEmptyString
   | RefPolicy URL
 derive instance genericPolicy :: Generic Policy _
 instance showPolicy :: Show Policy where
