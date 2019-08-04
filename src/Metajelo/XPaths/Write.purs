@@ -32,7 +32,7 @@ import Metajelo.XPaths                   (ParseEnv, appliesToProdAT, basicMetaP
                                          , resTypeP, sProdCP, sProdP, superOrgNameP
                                          , titleP, unsafeSingleNodeValue, versioningP)
 import Text.Email.Validate               (toString)
-import URL.Validator                     (urlToString)
+import Text.URL.Validate                 (urlToNEString, urlToString)
 import Web.DOM.Document                  (createElementNS)
 import Web.DOM.Element                   (Element, fromNode, prefix, setAttribute
                                          , toNode)
@@ -154,13 +154,13 @@ writeLocation env prodNd loc = do
   let locNd = toNode locEl
   writeInstitutionID env locNd loc.institutionID
   writeSimpleNode instNameP env locNd loc.institutionName
-  writeSimpleNode instTypeP env locNd (show loc.institutionType)
+  writeSimpleNode' instTypeP env locNd (show loc.institutionType)
   _ <- sequence $ loc.superOrganizationName <#> (\sOrg ->
     writeSimpleNode superOrgNameP env locNd sOrg)
   writeInstitutionContact env locNd loc.institutionContact
   writeInstitutionSustainability env locNd loc.institutionSustainability
   writeInstitutionPolicies env locNd loc.institutionPolicies
-  writeSimpleNode versioningP env locNd (show loc.versioning)
+  writeSimpleNode' versioningP env locNd (show loc.versioning)
 
 writeInstitutionContact :: DocWriter InstitutionContact
 writeInstitutionContact env locNd iContact = do
@@ -172,8 +172,8 @@ writeInstitutionContact env locNd iContact = do
 writeInstitutionSustainability :: DocWriter InstitutionSustainability
 writeInstitutionSustainability env locNd iSust = do
   iSustNd <- map toNode $ createAppendRecEle env locNd instSustainP
-  writeSimpleNode missionUrlP env iSustNd $ urlToString iSust.missionStatementURL
-  writeSimpleNode fundingUrlP env iSustNd $ urlToString iSust.fundingStatementURL
+  writeSimpleNode missionUrlP env iSustNd $ urlToNEString iSust.missionStatementURL
+  writeSimpleNode fundingUrlP env iSustNd $ urlToNEString iSust.fundingStatementURL
 
 writeInstitutionPolicies :: DocWriter (NonEmptyArray InstitutionPolicy)
 writeInstitutionPolicies env locNd iPolicies = do
@@ -190,16 +190,19 @@ writeInstitutionPolicy env iPolContNd iPol = do
     setAttribute appliesToProdAT (show apToProd) iPolEl)
   case iPol.policy of
     FreeTextPolicy polStr -> writeSimpleNode freeTextPolicyP env iPolNd polStr
-    RefPolicy urlStr -> writeSimpleNode refPolicyP env iPolNd $ urlToString urlStr
+    RefPolicy urlStr -> writeSimpleNode refPolicyP env iPolNd $ urlToNEString urlStr
 
 ----- Utility functions below -----
 
 -- | For creating a simple node with a string value that
 -- | has no other children or attributes.
 writeSimpleNode :: String -> DocWriter NonEmptyString
-writeSimpleNode tag env parentNd str = do
+writeSimpleNode tag env parentNd str = writeSimpleNode' tag env parentNd $ toStr str
+
+writeSimpleNode' :: String -> DocWriter String
+writeSimpleNode' tag env parentNd str = do
   newNd <- map toNode $ createAppendRecEle env parentNd tag
-  setTextContent (toStr str) newNd
+  setTextContent str newNd
 
 writeNodeMay :: NonEmptyString -> Maybe Node -> Effect Unit
 writeNodeMay str ndMay = do

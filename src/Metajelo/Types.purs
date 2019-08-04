@@ -18,7 +18,7 @@ import Data.Generic.Rep.Show                (genericShow)
 import Data.String.NonEmpty                 (NonEmptyString)
 import Data.Unfoldable1                     (class Unfoldable1)
 import Text.Email.Validate                  (EmailAddress)
-import URL.Validator                        (URL)
+import Text.URL.Validate                    (URL)
 
 -- | Stand in for xs:date
 type XsdDate = NonEmptyString

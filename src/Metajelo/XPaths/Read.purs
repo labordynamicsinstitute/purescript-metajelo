@@ -29,7 +29,7 @@ import Metajelo.Types                    (BasicMetadata, Format, Identifier
 import Metajelo.XPaths
 
 import Text.Email.Validate               (validate)
-import URL.Validator                     (URL, parsePublicURL)
+import Text.URL.Validate                 (URL, parsePublicURL)
 import Web.DOM.Document.XPath            as XP
 import Web.DOM.Document.XPath.ResultType as RT
 import Web.DOM.Element                   (fromNode, localName)
