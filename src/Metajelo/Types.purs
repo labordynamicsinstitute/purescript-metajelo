@@ -27,7 +27,7 @@ type Format = NonEmptyString
 
 -- | metadata about the publication and links to unlimited
 -- | number of suppementary products
-type MetajeloRecord = {
+type MetajeloRecordRows = (
   identifier :: Identifier
 , date :: XsdDate
   -- ^ The date of the original creation of this metadata record
@@ -36,23 +36,19 @@ type MetajeloRecord = {
 , relatedIdentifiers :: NonEmptyArray RelatedIdentifier
 , supplementaryProducts :: NonEmptyArray SupplementaryProduct
   -- ^ The link to the set of supplemenary products
-}
--- derive instance eqRecord :: Eq MetajeloRecord
+)
+type MetajeloRecord = Record MetajeloRecordRows
 
-type BaseId otherField = {
+type BaseIdRows otherField = (
   id :: NonEmptyString
 , idType :: IdentifierType
 | otherField
-}
-
-type Identifier = BaseId()
-
--- derive instance eqIdentifier :: Eq Identifier
-
+)
+type Identifier = Record (BaseIdRows())
 type ResourceID = Identifier
 type InstitutionID = Identifier
 
-type RelatedIdentifier = BaseId (relType :: RelationType)
+type RelatedIdentifier = Record (BaseIdRows (relType :: RelationType))
 
 -- | The type of the Identifier and RelatedIdentifier.
 data IdentifierType
@@ -98,27 +94,31 @@ instance smallBoundedIdentifierType :: SmallBounded IdentifierType
 allIdentifierTypes :: forall u. Unfoldable1 u => u IdentifierType
 allIdentifierTypes = upFromIncluding bottom
 
-type SupplementaryProduct = {
+type SupplementaryProductRows = (
   basicMetadata :: BasicMetadata
 , resourceID :: Maybe ResourceID
 , resourceType :: ResourceType
 , format :: Array Format
 , resourceMetadataSource :: Maybe ResourceMetadataSource
 , location :: Location
-}
+)
+type SupplementaryProduct = Record SupplementaryProductRows
+
 --derive instance eqSupplementaryProduct :: Eq SupplementaryProduct
 
-type BasicMetadata = {
+type BasicMetadataRows = (
   title :: NonEmptyString
 , creator :: NonEmptyString
 , publicationYear :: XsdDate
-}
 
+)
+type BasicMetadata = Record BasicMetadataRows
 
-type ResourceType = {
+type ResourceTypeRows = (
   description :: String
 , generalType :: ResourceTypeGeneral
-}
+)
+type ResourceType = Record ResourceTypeRows
 
 -- | The general type of a resource.
 data ResourceTypeGeneral =
@@ -160,10 +160,11 @@ allResourceTypeGenerals :: forall u. Unfoldable1 u => u ResourceTypeGeneral
 allResourceTypeGenerals = upFromIncluding bottom
 
 
-type ResourceMetadataSource = {
+type ResourceMetadataSourceRows = (
   url :: URL
 , relationType :: RelationType
-}
+)
+type ResourceMetadataSource = Record ResourceMetadataSourceRows
 
 -- | Description of the relationship of the resource being
 --   registered (A) and the related resource (B).
@@ -215,7 +216,7 @@ instance smallBoundedRelationType :: SmallBounded RelationType
 allRelationTypes :: forall u. Unfoldable1 u => u RelationType
 allRelationTypes = upFromIncluding bottom
 
-type Location = {
+type LocationRows = (
   institutionID :: InstitutionID
 , institutionName :: NonEmptyString
 , institutionType :: InstitutionType
@@ -225,7 +226,8 @@ type Location = {
 , institutionPolicies :: NonEmptyArray InstitutionPolicy
   -- ^ set of possible policies for this location
 , versioning :: Boolean
-}
+)
+type Location = Record LocationRows
 
 data InstitutionType =
     Commercial
@@ -255,11 +257,11 @@ instance smallBoundedInstitutionType :: SmallBounded InstitutionType
 allInstitutionTypes :: forall u. Unfoldable1 u => u InstitutionType
 allInstitutionTypes = upFromIncluding bottom
 
-
-type InstitutionContact = {
+type InstitutionContactRows = (
   emailAddress :: EmailAddress
 , contactType :: Maybe InstitutionContactType
-}
+)
+type InstitutionContact = Record InstitutionContactRows
 
 ictShow :: InstitutionContactType -> String
 ictShow DataCustodian = "dataCustodian"
@@ -287,10 +289,11 @@ instance smallBoundedInstitutionContactType :: SmallBounded InstitutionContactTy
 allInstitutionContactTypes :: forall u. Unfoldable1 u => u InstitutionContactType
 allInstitutionContactTypes = upFromIncluding bottom
 
-type InstitutionSustainability = {
+type InstitutionSustainabilityRows = (
   missionStatementURL :: URL
 , fundingStatementURL :: URL
-}
+)
+type InstitutionSustainability = Record InstitutionSustainabilityRows
 
 data PolicyType
   = Access
@@ -324,11 +327,12 @@ instance smallBoundedPolicyType :: SmallBounded PolicyType
 allPolicyTypes :: forall u. Unfoldable1 u => u PolicyType
 allPolicyTypes = upFromIncluding bottom
 
-type InstitutionPolicy = {
+type InstitutionPolicyRows = (
   policy :: Policy
 , policyType :: Maybe PolicyType
 , appliesToProduct :: Maybe Boolean
-}
+)
+type InstitutionPolicy = Record InstitutionPolicyRows
 
 data Policy
   = FreeTextPolicy NonEmptyString
