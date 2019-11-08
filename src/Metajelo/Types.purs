@@ -48,7 +48,8 @@ type Identifier = Record (BaseIdRows())
 type ResourceID = Identifier
 type InstitutionID = Identifier
 
-type RelatedIdentifier = Record (BaseIdRows (relType :: RelationType))
+type RelatedIdentifierRows = BaseIdRows (relType :: RelationType)
+type RelatedIdentifier = Record RelatedIdentifierRows
 
 -- | The type of the Identifier and RelatedIdentifier.
 data IdentifierType
@@ -110,7 +111,6 @@ type BasicMetadataRows = (
   title :: NonEmptyString
 , creator :: NonEmptyString
 , publicationYear :: XsdDate
-
 )
 type BasicMetadata = Record BasicMetadataRows
 
