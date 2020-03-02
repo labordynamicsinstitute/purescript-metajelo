@@ -9,6 +9,7 @@ You can edit this file as you like.
     , "enums"
     , "generics-rep"
     , "naturals"
+    , "nonbili-dom"
     , "stringutils"
     , "url-validator"
     , "web-dom"

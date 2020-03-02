@@ -140,6 +140,12 @@ let additions = {
           , repo = "https://github.com/bbarker/purescript-enums.git"
           , version = "1979eb74baec39b5e62567948f402b4194230e9f"
           }
+          , nonbili-dom =
+          { dependencies =
+            [ "effect", "web-dom", "web-html" ]
+          , repo = "https://github.com/bbarker/purescript-nonbili-dom.git"
+          , version = "b4865774499ab4952114864f4162890d9ad1f1b5"
+          }
         , url-validator =
           { dependencies =
             [ "nullable" ]

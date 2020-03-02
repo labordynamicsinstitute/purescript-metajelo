@@ -5,7 +5,7 @@ unit, ($), (<>), (<#>))
 
 import Data.Array.NonEmpty               (NonEmptyArray)
 import Data.Foldable                     (for_)
-import Data.Maybe                        (Maybe(..))
+import Data.Maybe                        (Maybe(..), maybe)
 import Data.String.NonEmpty              (NonEmptyString)
 import Data.String.NonEmpty              as NES
 import Data.Traversable                  (sequence)
@@ -22,7 +22,8 @@ import Metajelo.Types                    (BasicMetadata, Format, Identifier
                                          , SupplementaryProduct, XsdDate)
 import Metajelo.XPaths                   (ParseEnv, appliesToProdAT, basicMetaP
                                          , creatorP, dateRootP, formatCP, formatP
-                                         , freeTextPolicyP, fundingUrlP, idP, idTypeAT
+                                         , freeTextPolicyP, fundingUrlP
+                                         , getDefaultParseEnv, idP, idTypeAT
                                          , instContactP, instContactTypeAT, instIdP
                                          , instNameP, instPolicyCP, instPolicyP
                                          , instSustainP, instTypeP, lastModRootP, locP
@@ -31,9 +32,10 @@ import Metajelo.XPaths                   (ParseEnv, appliesToProdAT, basicMetaP
                                          , resIdTypeAT, resMetaSourceP, resTypeGenAT
                                          , resTypeP, sProdCP, sProdP, superOrgNameP
                                          , titleP, unsafeSingleNodeValue, versioningP)
+import Nonbili.DOM                       (outerHTML)
 import Text.Email.Validate               (toString)
 import Text.URL.Validate                 (urlToNEString, urlToString)
-import Web.DOM.Document                  (createElementNS)
+import Web.DOM.Document                  as DOC
 import Web.DOM.Element                   (Element, fromNode, prefix, setAttribute
                                          , toNode)
 import Web.DOM.Node                      (Node, appendChild, setTextContent)
@@ -43,6 +45,13 @@ toStr = NES.toString
 
 type DocWriterRoot t = ParseEnv -> t -> Effect Unit
 type DocWriter t = ParseEnv -> Node -> t -> Effect Unit
+
+recordToString :: MetajeloRecord -> Effect String
+recordToString rec = do
+  env <- getDefaultParseEnv blankDoc
+  writeRecord env rec
+  docEleMay <- DOC.documentElement env.doc
+  maybe (pure "") outerHTML docEleMay
 
 -- | For convenience, this method assumes that a document with
 -- | the outer layers "above" individual supplementary producs
@@ -172,8 +181,10 @@ writeInstitutionContact env locNd iContact = do
 writeInstitutionSustainability :: DocWriter InstitutionSustainability
 writeInstitutionSustainability env locNd iSust = do
   iSustNd <- map toNode $ createAppendRecEle env locNd instSustainP
-  writeSimpleNode missionUrlP env iSustNd $ urlToNEString iSust.missionStatementURL
-  writeSimpleNode fundingUrlP env iSustNd $ urlToNEString iSust.fundingStatementURL
+  writeSimpleNode missionUrlP env iSustNd $
+    urlToNEString iSust.missionStatementURL
+  writeSimpleNode fundingUrlP env iSustNd $
+    urlToNEString iSust.fundingStatementURL
 
 writeInstitutionPolicies :: DocWriter (NonEmptyArray InstitutionPolicy)
 writeInstitutionPolicies env locNd iPolicies = do
@@ -190,7 +201,8 @@ writeInstitutionPolicy env iPolContNd iPol = do
     setAttribute appliesToProdAT (show apToProd) iPolEl)
   case iPol.policy of
     FreeTextPolicy polStr -> writeSimpleNode freeTextPolicyP env iPolNd polStr
-    RefPolicy urlStr -> writeSimpleNode refPolicyP env iPolNd $ urlToNEString urlStr
+    RefPolicy urlStr -> writeSimpleNode refPolicyP env iPolNd $
+      urlToNEString urlStr
 
 ----- Utility functions below -----
 
@@ -224,7 +236,7 @@ createRecEle env tag = do
     Just pfx -> pfx <> ":"
     Nothing -> ""
   let tagName = recPfx <> tag
-  createElementNS (Just env.ns) tagName env.doc
+  DOC.createElementNS (Just env.ns) tagName env.doc
 
 blankDoc :: String
 blankDoc = """<?xml version="1.0" encoding="UTF-8"?>

@@ -7,6 +7,7 @@ import Data.Array.NonEmpty               as DAN
 import Data.Either                       (fromRight)
 import Data.Foldable                     (for_)
 import Data.Maybe                        (Maybe(..), fromJust, isJust)
+import Data.String.Common                (null)
 import Data.String.NonEmpty              (NonEmptyString, toString, unsafeFromString)
 -- import Data.Natural                      (intToNat)
 -- import Debug.Trace                       (traceM)
@@ -215,6 +216,8 @@ roundTripTest docName =
     -- tlog $ "DEBUG:\n" <> curDoc
     rec1 <- liftEffect $ MXR.readRecord writeEnv
     Assert.assert ("rec0 /= rec1: " <> (show rec0) <> (show rec1)) $ rec0 == rec1
+    rec1str <- liftEffect $ MXW.recordToString rec1
+    Assert.assert "rec1str is null: " $ not $ null rec1str
 
 
 tlog :: forall a. Show a => a -> Aff Unit
