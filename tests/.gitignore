@@ -1,7 +1,4 @@
 /bower_components/
-/.cache
-/dist/
-/testdist/
 /node_modules/
 /.pulp-cache/
 /output/
@@ -10,10 +7,4 @@
 /.psc*
 /.purs*
 /.psa*
-.spago
-
-
-# Temp files:
-*~
-\.\#*
-.xdg*
+/.spago

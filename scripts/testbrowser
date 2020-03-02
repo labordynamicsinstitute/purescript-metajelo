@@ -1,4 +1,6 @@
 #!/usr/bin/env sh
 
-pulp browserify --main "Test.Main" --to testdist/index.js --src-path "src" -I "test" -- --censor-lib && \
-cp static/index.html testdist/index.html
+cd tests && \
+spago build && \
+spago bundle-app --main "Test.Main" --to ../testdist/index.js && \
+cd .. && cp static/index.html testdist/index.html
