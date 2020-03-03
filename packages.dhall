@@ -143,8 +143,8 @@ let additions = {
           , nonbili-dom =
           { dependencies =
             [ "effect", "web-dom", "web-html" ]
-          , repo = "https://github.com/bbarker/purescript-nonbili-dom.git"
-          , version = "b4865774499ab4952114864f4162890d9ad1f1b5"
+          , repo = "https://github.com/nonbili/purescript-nonbili-dom.git"
+          , version = "v0.3.0"
           }
         , url-validator =
           { dependencies =
