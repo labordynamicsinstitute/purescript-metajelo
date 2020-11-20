@@ -1,0 +1,43 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 4136eb6fd0433d26f6de8fcf9fb6d49f738e9aa35bc57f0e54f42ebce0cb8d29
+
+name:           metajelo-templates
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/githubuser/metajelo-templates#readme>
+homepage:       https://github.com/githubuser/metajelo-templates#readme
+bug-reports:    https://github.com/githubuser/metajelo-templates/issues
+author:         Author name here
+maintainer:     example@example.com
+copyright:      2020 Author name here
+license:        BSD3
+build-type:     Simple
+extra-source-files:
+    README.md
+
+source-repository head
+  type: git
+  location: https://github.com/githubuser/metajelo-templates
+
+executable metajelo-templates-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_metajelo_templates
+  hs-source-dirs:
+      src
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , bytestring >=0.10 && <0.11
+    , directory
+    , exceptions
+    , metajelo-templates
+    , path
+    , path-io
+    , turtle
+    , zio
+  default-language: Haskell2010
