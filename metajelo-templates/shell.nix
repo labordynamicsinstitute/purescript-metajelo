@@ -1,21 +1,11 @@
 { nixpkgs ? import <nixpkgs> {}, compiler ? "default", doBenchmark ? false }:
+
 let
-  config = {
-    packageOverrides = pkgs: rec {
-      haskellPackages = pkgs.haskellPackages.override {
-        overrides = haskellPackagesNew: haskellPackagesOld: rec {
-          zio = haskellPackagesNew.callPackage ./zio.nix { };
-        };
-      };
-    };
-  };
 
-  pkgs = import <nixpkgs> { inherit config; };
-
-  # inherit (nixpkgs) pkgs;
+  inherit (nixpkgs) pkgs;
 
   f = { mkDerivation, base, bytestring, directory, exceptions
-      , hpack, path, path-io, stdenv, turtle, zio
+      , hpack, path, path-io, stdenv, zio
       }:
       mkDerivation {
         pname = "metajelo-templates";
@@ -25,11 +15,11 @@ let
         isExecutable = true;
         libraryToolDepends = [ hpack ];
         executableHaskellDepends = [
-          base bytestring directory exceptions path path-io turtle zio
+          base bytestring directory exceptions path path-io zio
         ];
         prePatch = "hpack";
-        homepage = "https://github.com/githubuser/metajelo-templates#readme";
-        license = stdenv.lib.licenses.bsd3;
+        homepage = "https://github.com/labordynamicsinstitute/metajelo-ui#readme";
+        license = stdenv.lib.licenses.mpl20;
       };
 
   haskellPackages = if compiler == "default"

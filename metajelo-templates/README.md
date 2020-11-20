@@ -2,33 +2,23 @@
 
 ### Nix
 
-First, load the necessary build tools:
+#### Updating cabal build file
 
 ```
-$ nix-shell -p haskellPackages.hpack cabal-install cabal2nix
-```
-
-Then, build the project
-
-```
+$ nix-shell -p haskellPackages.hpack cabal2nix
 $ hpack
-$ cabal2nix --shell . > package-shell.nix
-$ nix-shell package-shell.nix
-$ cabal build
+$ cabal2nix --shell . > shell.nix
 ```
 
-# Updating other dependencies
+#### Build the project
 
-ZIO is currently not in nixpkgs; to update it to the latest on master:
+Note, if things go poorly, it is always worth trying
+`cabal --enable-nix clean` or maybe `cabal clean` as well.
+
+
+At this point, you can exit the shell used to generate 
 
 ```
-cabal2nix https://github.com/bbarker/haskell-zio.git > zio.nix
+$ nix-shell -p cabal-install
+$ cabal --enable-nix build
 ```
-
-Comment out the line `prePatch = "hpack";` in `zio.nix`, as it seems
-to cause the build to fail.
-
-
-Note: you can use haskellPackages.callPackage on the output of
-`cabal2nix cabal://package-version` and put it in an override for the
-nixpkgs haskell package set

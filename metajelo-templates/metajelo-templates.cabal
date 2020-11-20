@@ -1,29 +1,29 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.2.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4136eb6fd0433d26f6de8fcf9fb6d49f738e9aa35bc57f0e54f42ebce0cb8d29
+-- hash: 77f3059f6e06c8a5661839d2c009aa4fe1f0ac5ef3626912d118ad0114e5334e
 
 name:           metajelo-templates
 version:        0.1.0.0
 description:    Please see the README on GitHub at <https://github.com/githubuser/metajelo-templates#readme>
-homepage:       https://github.com/githubuser/metajelo-templates#readme
-bug-reports:    https://github.com/githubuser/metajelo-templates/issues
-author:         Author name here
-maintainer:     example@example.com
-copyright:      2020 Author name here
-license:        BSD3
+homepage:       https://github.com/labordynamicsinstitute/metajelo-ui#readme
+bug-reports:    https://github.com/labordynamicsinstitute/metajelo-ui/issues
+author:         Brandon Barker
+maintainer:     brandon.barker@gmail.com
+copyright:      2020 Labor Dynamics Institute
+license:        MPL-2.0
 build-type:     Simple
 extra-source-files:
     README.md
 
 source-repository head
   type: git
-  location: https://github.com/githubuser/metajelo-templates
+  location: https://github.com/labordynamicsinstitute/metajelo-ui
 
-executable metajelo-templates-exe
+executable metajelo-templates
   main-is: Main.hs
   other-modules:
       Paths_metajelo_templates
@@ -35,9 +35,7 @@ executable metajelo-templates-exe
     , bytestring >=0.10 && <0.11
     , directory
     , exceptions
-    , metajelo-templates
     , path
     , path-io
-    , turtle
     , zio
   default-language: Haskell2010
