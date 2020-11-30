@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 77f3059f6e06c8a5661839d2c009aa4fe1f0ac5ef3626912d118ad0114e5334e
+-- hash: a6115b0decbfed422e2dce8acba11bf61897c46d1dd9dcc6a4d1416af31ee858
 
 name:           metajelo-templates
 version:        0.1.0.0
@@ -26,6 +26,7 @@ source-repository head
 executable metajelo-templates
   main-is: Main.hs
   other-modules:
+      ZIO.Prelude
       Paths_metajelo_templates
   hs-source-dirs:
       src
