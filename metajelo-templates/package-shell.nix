@@ -5,8 +5,8 @@ let
   inherit (nixpkgs) pkgs;
 
   f = { mkDerivation, base, bytestring, directory, exceptions
-      , hpack, path, path-io, safe-exceptions, stdenv, text, xml-conduit
-      , xml-types, zio
+      , hpack, path, path-io, safe-exceptions, stdenv, string-interpolate
+      , text, xml-conduit, xml-types, zio
       }:
       mkDerivation {
         pname = "metajelo-templates";
@@ -17,7 +17,7 @@ let
         libraryToolDepends = [ hpack ];
         executableHaskellDepends = [
           base bytestring directory exceptions path path-io safe-exceptions
-          text xml-conduit xml-types zio
+          string-interpolate text xml-conduit xml-types zio
         ];
         prePatch = "hpack";
         homepage = "https://github.com/labordynamicsinstitute/metajelo-ui#readme";

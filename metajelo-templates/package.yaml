@@ -32,6 +32,7 @@ dependencies:
 - path
 - path-io
 - safe-exceptions
+- string-interpolate
 - text
 # - turtle
 - xml-conduit

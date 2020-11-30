@@ -15,6 +15,7 @@ module ZIO.Prelude (
 ) where
 
 import qualified Control.Exception.Safe as SX
+import           Path
 import qualified Prelude as P
 import           Prelude ((.), ($), Bool(..), IO, Show(..), String, fst, snd)
 
