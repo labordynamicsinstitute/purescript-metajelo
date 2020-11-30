@@ -18,6 +18,12 @@ extra-source-files:
 # common to point users to the README.md file.
 description:         Please see the README on GitHub at <https://github.com/githubuser/metajelo-templates#readme>
 
+
+default-extensions:
+- LambdaCase
+- MultiWayIf
+- OverloadedStrings
+
 dependencies:
 - base >= 4.7 && < 5
 - bytestring >= 0.10 && < 0.11
@@ -25,8 +31,11 @@ dependencies:
 - exceptions
 - path
 - path-io
-# - tar >= 0.5.1
+- safe-exceptions
+- text
 # - turtle
+- xml-conduit
+- xml-types
 - zio
 
 executables:
@@ -37,5 +46,9 @@ executables:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
-
+    - -Wall
+    - -Wtabs
+    - -Wincomplete-record-updates
+    - -Werror=missing-methods
+    - -Werror=missing-fields
 

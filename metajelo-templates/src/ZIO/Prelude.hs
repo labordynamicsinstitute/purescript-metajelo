@@ -1,3 +1,4 @@
+{-# LANGUAGE ExplicitForAll    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 {- | Makeshift prelude until zio-prelude is in place -} 
@@ -5,18 +6,25 @@ module ZIO.Prelude (
   module ZIO.Prelude
 , (.)
 , ($)
-, IO(..)
+, Bool(..)
+, IO
 , Show(..)
 , String
+, fst
+, snd
 ) where
 
+import qualified Control.Exception.Safe as SX
 import qualified Prelude as P
-import           Prelude ((.), ($), IO(..), Show(..), String)
+import           Prelude ((.), ($), Bool(..), IO, Show(..), String, fst, snd)
 
 import           ZIO.Trans
 
 putStrLn :: String -> ZIO r SomeNonPseudoException () 
-putStrLn x = zlift $ P.putStrLn x
+putStrLn = zlift . P.putStrLn
+
+throwString :: forall r a. String -> ZIO r SomeNonPseudoException a
+throwString = zlift . SX.throwString
 
 -- TODO: classy variant?
 putStrLnIO :: String -> IO ()
