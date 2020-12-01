@@ -34,17 +34,27 @@ app = do
   xsd <- zlift $ readFile def (toFilePath schemaFile)
   let xsdCursor = fromDocument xsd
   let noteCursors = xsdCursor $// element [i|{#{xmlSchema}}documentation|]
-  noteEleMap <- pure $ DM.fromList $ noteCursors <&> (\nCurs -> (
-      (nCurs & ancestor) <&> (node >>> getEle) & getFirstNodeName
-    , nCurs $/ content
-    ))
+  let noteEleMap = makeNoteEleMap noteCursors
+  -- noteEleMap :: DM.Map T.Text T.Text <- pure $ DM.fromList $ noteCursors <&> (\nCurs -> (
+  --     -- (nCurs & ancestor) <&> (node >>> getEle) & getFirstEleName
+  --     (nCurs $/ ancestor >=> element [i|{#{xmlSchema}}element|]
+  --       &| (node >>> getEle)) & getFirstEleName
+  --   , (nCurs $/ content) & T.concat
+  --   ))
   let allNotes = xsdCursor $// element [i|{#{xmlSchema}}documentation|]  &// content 
   putStrLn $ show allNotes
   putStrLn $ show noteEleMap
   -- putStrLn $ show $ xsd
   where
-    getFirstNodeName nds = nds & catMaybes & headMay <&> (elementName >>> nameLocalName)
-      & fromMayStr
+    getFirstEleName :: [Maybe Element] -> T.Text
+    getFirstEleName els = els & catMaybes & headMay <&> elementAttributes
+      >>= (DM.lookup "name") & fromMayStr
+    makeNoteEleMap :: [Cursor] -> DM.Map T.Text T.Text
+    makeNoteEleMap noteCursors = noteCursors <&> (\nCurs -> (
+        (nCurs $/ ancestor >=> element [i|{#{xmlSchema}}element|]
+          &| (node >>> getEle)) & getFirstEleName
+      , (nCurs $/ content) & T.concat
+      )) & DM.fromList & (DM.delete "") <&> T.strip <&> (T.words >>> T.unwords)
 
 getRepoDir :: AppEnv (Path Abs Dir)
 getRepoDir = do

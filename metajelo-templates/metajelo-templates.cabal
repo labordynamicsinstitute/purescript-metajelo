@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ea8657fdc3bfd6a826b7f5dc763ad869fa7bceb3095ef40974354fd277e339bd
+-- hash: 8decdd148307a900e793f3da1dbbb730e6470a5574f4b436bcafca733dab391c
 
 name:           metajelo-templates
 version:        0.1.0.0
@@ -30,7 +30,7 @@ executable metajelo-templates
       Paths_metajelo_templates
   hs-source-dirs:
       src
-  default-extensions: LambdaCase MultiWayIf OverloadedStrings
+  default-extensions: LambdaCase MultiWayIf OverloadedStrings ScopedTypeVariables
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -Wtabs -Wincomplete-record-updates -Werror=missing-methods -Werror=missing-fields
   build-depends:
       base >=4.7 && <5

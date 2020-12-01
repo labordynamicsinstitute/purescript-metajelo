@@ -23,6 +23,7 @@ default-extensions:
 - LambdaCase
 - MultiWayIf
 - OverloadedStrings
+- ScopedTypeVariables
 
 dependencies:
 - base >= 4.7 && < 5

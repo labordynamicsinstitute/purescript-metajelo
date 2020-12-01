@@ -17,9 +17,11 @@ module ZIO.Prelude (
 , Show(..)
 , String
 , const
-, fst
-, snd
+, filter
+, flip
+, fst, snd
 , null
+, and, or, not
 ) where
 
 import qualified Control.Exception.Safe as SX
@@ -27,7 +29,7 @@ import           Data.Function ((&))
 import           Data.Functor ((<&>))
 import           Path
 import qualified Prelude as P
-import           Prelude ((.), ($), (<$>), Bool(..), Maybe(..), IO, Applicative(..), Foldable(..), Show(..), String, const, fst, snd, null)
+import           Prelude ((.), ($), (<$>), Bool(..), Maybe(..), IO, Applicative(..), Foldable(..), Show(..), String, const, filter, flip, fst, snd, null, and, or, not)
 
 import           ZIO.Trans
 
