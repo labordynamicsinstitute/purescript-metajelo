@@ -6,18 +6,28 @@ module ZIO.Prelude (
   module ZIO.Prelude
 , (.)
 , ($)
+, (&)
+, (<$>)
+, (<&>)
 , Bool(..)
+, Maybe(..)
 , IO
+, Applicative(..)
+, Foldable(..)
 , Show(..)
 , String
+, const
 , fst
 , snd
+, null
 ) where
 
 import qualified Control.Exception.Safe as SX
+import           Data.Function ((&))
+import           Data.Functor ((<&>))
 import           Path
 import qualified Prelude as P
-import           Prelude ((.), ($), Bool(..), IO, Show(..), String, fst, snd)
+import           Prelude ((.), ($), (<$>), Bool(..), Maybe(..), IO, Applicative(..), Foldable(..), Show(..), String, const, fst, snd, null)
 
 import           ZIO.Trans
 
@@ -30,3 +40,15 @@ throwString = zlift . SX.throwString
 -- TODO: classy variant?
 putStrLnIO :: String -> IO ()
 putStrLnIO = P.putStrLn
+
+
+ -- -- From safe, RIO, etc:
+ -- liftMay :: (a -> b) -> (a -> Bool) -> (a -> Maybe b)
+ -- liftMay func test val = if test val then Nothing else Just $ func val
+ -- --
+ -- headMay, lastMay :: [a] -> Maybe a
+ -- headMay = liftMay null P.head
+ -- lastMay = liftMay null P.last
+
+headMay :: Foldable f => f a -> Maybe a
+headMay = foldr (const . Just) Nothing

@@ -3,14 +3,17 @@
 
 module Main where
 
-import           ZIO.Prelude
-
+import           Control.Arrow ((>>>))
+import qualified Data.Map.Strict as DM
+import           Data.Maybe (catMaybes)
+import           Data.String (IsString(..))
 import           Data.String.Interpolate ( i )
 import qualified Data.Text as T
 import           Path
 import           System.Environment (getExecutablePath)
 import           Text.XML
 import           Text.XML.Cursor
+import           ZIO.Prelude
 import           ZIO.Trans
 
 main :: IO ()
@@ -26,14 +29,22 @@ app :: AppEnv ()
 app = do
   putStrLn "hello from ZIO"
   repoDir <- getRepoDir
+  putStrLn $ show repoDir
   let schemaFile = repoDir </> schemaRelPath
   xsd <- zlift $ readFile def (toFilePath schemaFile)
   let xsdCursor = fromDocument xsd
-  --let noteCursors = xsdCursor $// element "documentation"
+  let noteCursors = xsdCursor $// element [i|{#{xmlSchema}}documentation|]
+  noteEleMap <- pure $ DM.fromList $ noteCursors <&> (\nCurs -> (
+      (nCurs & ancestor) <&> (node >>> getEle) & getFirstNodeName
+    , nCurs $/ content
+    ))
   let allNotes = xsdCursor $// element [i|{#{xmlSchema}}documentation|]  &// content 
-  putStrLn $ show repoDir
   putStrLn $ show allNotes
+  putStrLn $ show noteEleMap
   -- putStrLn $ show $ xsd
+  where
+    getFirstNodeName nds = nds & catMaybes & headMay <&> (elementName >>> nameLocalName)
+      & fromMayStr
 
 getRepoDir :: AppEnv (Path Abs Dir)
 getRepoDir = do
@@ -52,6 +63,13 @@ getRepoDir = do
 schemaRelPath :: Path Rel File
 schemaRelPath = [relfile|schema/metajelo.xsd|]
 
+getEle :: Node -> Maybe Element
+getEle (NodeElement e) = Just e 
+getEle _ = Nothing
+
+fromMayStr :: IsString a => Maybe a -> a
+fromMayStr (Just a) = a
+fromMayStr Nothing = fromString ""
 
 xmlSchema :: String
 xmlSchema = "http://www.w3.org/2001/XMLSchema"
