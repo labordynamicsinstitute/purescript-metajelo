@@ -7,11 +7,13 @@ import Data.Array.NonEmpty               as DAN
 import Data.Either                       (fromRight)
 import Data.Foldable                     (for_)
 import Data.Maybe                        (Maybe(..), fromJust, isJust)
+import Data.Natural                      (intToNat)
 import Data.String.Common                (null)
 import Data.String.NonEmpty              (NonEmptyString, toString, unsafeFromString)
+import Data.String.Utils                 (startsWith)
 -- import Data.Natural                      (intToNat)
 -- import Debug.Trace                       (traceM)
-import Data.XPath                        (class XPathLike, root, xx, (/?), (//))
+import Data.XPath                        (xx, (/?))
 import Effect                            (Effect)
 import Effect.Aff                        (Aff)
 import Effect.Class                      (liftEffect)
@@ -20,15 +22,14 @@ import Effect.Console                    (logShow)
 import Foreign.Object                    as FO
 import Partial.Unsafe                    (unsafePartial)
 import Test.Data                         as TD
-import Test.Unit                         (Test, TestSuite, suite, test, testSkip)
+import Test.Unit                         (Test, TestSuite, suite, test {- , testSkip -})
 import Test.Unit.Main                    (runTest)
 import Test.Unit.Assert                  as Assert
 import Text.Email.Validate               as EA
 import Text.URL.Validate                 as URL
 import Web.DOM.Document                  (Document, toNode)
 import Web.DOM.DOMParser                 (DOMParser, makeDOMParser, parseXMLFromString)
-import Web.DOM.XMLSerializer             (XMLSerializer, makeXMLSerializer
-                                         , serializeToString)
+import Web.DOM.XMLSerializer             (makeXMLSerializer)
 import Web.DOM.Document.XPath            as XP
 import Web.DOM.Document.XPath.ResultType as RT
 import Web.DOM.Node                      (Node)
@@ -104,8 +105,14 @@ mainTest = runTest do
       record <- liftEffect $ MXR.readRecord parseEnv
       assertNESEq "OjlTjf" record.identifier.id
       Assert.equal MJ.EISSN record.identifier.idType
-      assertNESEq "2020-04-04" record.date
-      assertNESEq "2019-05-04Z" record.lastModified
+      dateNES <- liftEffect $ MXW.dateTimeToStr record.date
+      Assert.assert ("record.date startsWith input date")
+        $ startsWith "2020-04-04" (toString dateNES)
+      lastModNES <- liftEffect $ MXW.dateTimeToStr record.lastModified
+      tlog "lastModNES is: "
+      tlog lastModNES
+      Assert.assert ("record.lastModified startsWith input date")
+        $ startsWith "2019-05-04" (toString lastModNES)
       Assert.equal 2 (DAN.length record.relatedIdentifiers)
       relId1 <- pure $ unsafePartial fromJust $ record.relatedIdentifiers DAN.!! 1
       assertNESEq "sm3AM1NbOSx" relId1.id
@@ -120,7 +127,7 @@ mainTest = runTest do
       assertNESEq "bW8w2m5bzZ0WoKj7SBI_" prod0resId.id
       assertNESEq "niBi6PpDgbhM3" prod0.basicMetadata.title
       assertNESEq "cbK1" prod0.basicMetadata.creator
-      assertNESEq "2019-08-11Z" prod0.basicMetadata.publicationYear
+      Assert.equal (intToNat 2019) prod0.basicMetadata.publicationYear
       Assert.equal MJ.Event prod0.resourceType.generalType
       Assert.equal "cNMAxYjF0j0k" prod0.resourceType.description
       prod0mdSource <- pure $ unsafePartial $ fromJust prod0.resourceMetadataSource

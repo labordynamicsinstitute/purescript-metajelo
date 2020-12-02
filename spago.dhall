@@ -8,6 +8,8 @@ You can edit this file as you like.
       "email-validate"
     , "enums"
     , "generics-rep"
+    , "globals"
+    , "js-date"
     , "naturals"
     , "nonbili-dom"
     , "stringutils"

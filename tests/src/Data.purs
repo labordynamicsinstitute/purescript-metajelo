@@ -37,7 +37,7 @@ metajeloXml = """<?xml version="1.0" encoding="UTF-8"?>
             <basicMetadata>
                 <Title>niBi6PpDgbhM3</Title>
                 <Creator>cbK1</Creator>
-                <PublicationYear>2019-08-11Z</PublicationYear>
+                <PublicationYear>2019</PublicationYear>
             </basicMetadata>
             <resourceID relatedIdentifierType="IGSN">bW8w2m5bzZ0WoKj7SBI_</resourceID>
             <resourceType resourceTypeGeneral="Event">cNMAxYjF0j0k</resourceType>
@@ -72,7 +72,7 @@ metajeloXml = """<?xml version="1.0" encoding="UTF-8"?>
             <basicMetadata>
                 <Title>M._y</Title>
                 <Creator>T4nUil6</Creator>
-                <PublicationYear>2020-09-16Z</PublicationYear>
+                <PublicationYear>2020</PublicationYear>
             </basicMetadata>
             <resourceID relatedIdentifierType="IGSN">lCi7-M50qjeFNhiAt</resourceID>
             <resourceType resourceTypeGeneral="Sound">ewNM9_1KtEgas9spr8PEY</resourceType>

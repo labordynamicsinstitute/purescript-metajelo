@@ -1,20 +1,27 @@
 module Metajelo.XPaths.Read where
 
-import Prelude (bind, join, map, not, pure, (==), (#), ($), (<>), (<#>))
+import Prelude (bind, join, map, not, pure, (==), (#), ($), (<>), (<#>), (<=))
 
 import Control.Apply                     (lift2)
+import Data.Bounded                      (bottom)
 import Data.Array                        (head, filter)
 import Data.Array.NonEmpty               (NonEmptyArray)
 import Data.Array.NonEmpty               as NA
+import Data.Int                          (round)
 import Data.Either                       (Either(..))
-import Data.Maybe                        (Maybe(..))
-import Data.String                       (trim)
-import Data.String.NonEmpty              (NonEmptyString, fromString)
+import Data.JSDate                       as JSDate
+import Data.Maybe                        (Maybe(..), fromMaybe)
+import Data.Natural                      (intToNat)
+import Data.String                       as S
+import Data.String                       (stripSuffix)
+import Data.String.NonEmpty              (NonEmptyString, toString)
+import Data.String.Pattern               (Pattern(..))
 import Data.String.Utils                 (startsWith)
 import Data.Traversable                  (sequence)
 import Data.XPath                        (at, xx, (/?))
 import Effect                            (Effect)
 import Effect.Exception                  (throw)
+import Global                            (readInt)
 
 import Metajelo.Types                    (BasicMetadata, Format, Identifier
                                          , IdentifierType(..), InstitutionContact
@@ -51,13 +58,6 @@ readRecord env = do
     , supplementaryProducts: recProds
   }
 
-readNonEmptyString :: String -> String -> Either String NonEmptyString
-readNonEmptyString field str =
-  let nesMay = fromString $ trim str in
-  case nesMay of
-    Nothing -> Left $ "Empty string found for " <> field
-    Just nes -> Right nes
-
 readIdentifier :: ParseEnv -> Effect Identifier
 readIdentifier env = do
   recIdStr <- env.xevalRoot.str idRootP
@@ -91,12 +91,25 @@ readIdentifierType unknown =
 readDate :: ParseEnv -> Effect XsdDate
 readDate env = do
   dateStr <- env.xevalRoot.str dateRootP
-  rightOrThrow $ readNonEmptyString "Date" dateStr
+  dateStrNE <- rightOrThrow $ readNonEmptyString "Date" dateStr
+  parseDate dateStrNE
 
 readModDate :: ParseEnv -> Effect XsdDate
 readModDate env = do
   dateStr <- env.xevalRoot.str lastModRootP
-  rightOrThrow $ readNonEmptyString "ModDate" dateStr
+  dateStrNE <- rightOrThrow $ readNonEmptyString "ModDate" dateStr
+  parseDate dateStrNE
+
+parseDate :: NonEmptyString -> Effect XsdDate
+parseDate dateStrNE = do
+  let dateStr = toString dateStrNE
+  dateStrNoZ <- pure $ case stripSuffix (Pattern "Z") dateStr of
+    Just noZ -> if S.length noZ <= 10 then noZ <> expandedZ else dateStr
+    Nothing -> dateStr
+  jsDate <- JSDate.parse dateStrNoZ
+  pure $ fromMaybe bottom $ JSDate.toDateTime jsDate
+  where
+    expandedZ = "T00:00:00.000Z"
 
 readRelIdentifiers :: ParseEnv -> Effect (NonEmptyArray RelatedIdentifier)
 readRelIdentifiers env = do
@@ -198,7 +211,8 @@ readBasicMetadata env prodNode = do
     getCreator nd = env.xeval.str nd $ xx creatorP
     getPublicationYear nd = do
       pyStr <- env.xeval.str nd $ xx pubYearP
-      rightOrThrow $ readNonEmptyString "PubYear" pyStr
+      pyNES <- rightOrThrow $ readNonEmptyString "PubYear" pyStr
+      pure $ intToNat $ round $ readInt 10 (toString pyNES)
 
 readResourceID :: ParseEnv -> Node -> Effect (Maybe ResourceID)
 readResourceID env prodNode = do
@@ -438,9 +452,3 @@ getUrl env xpath nd = do
   case parsePublicURL urlStr of
     Left errMsg -> throw errMsg
     Right url -> pure url
-
-
-rightOrThrow :: forall a. Either String a -> Effect a
-rightOrThrow ei = case ei of
-  Right val -> pure val
-  Left err -> throw err

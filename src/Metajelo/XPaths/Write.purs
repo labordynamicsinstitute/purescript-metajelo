@@ -5,6 +5,7 @@ unit, ($), (<>), (<#>))
 
 import Data.Array.NonEmpty               (NonEmptyArray)
 import Data.Foldable                     (for_)
+import Data.JSDate                       as JSDate
 import Data.Maybe                        (Maybe(..), maybe)
 import Data.String.NonEmpty              (NonEmptyString)
 import Data.String.NonEmpty              as NES
@@ -27,10 +28,11 @@ import Metajelo.XPaths                   (ParseEnv, appliesToProdAT, basicMetaP
                                          , instContactP, instContactTypeAT, instIdP
                                          , instNameP, instPolicyCP, instPolicyP
                                          , instSustainP, instTypeP, lastModRootP, locP
-                                         , missionUrlP, polTypeAT, pubYearP, refPolicyP
+                                         , missionUrlP, polTypeAT, pubYearP
+                                         , readNonEmptyString, refPolicyP
                                          , relIdP, relIdTypeAT, relTypeAT, resIdP
                                          , resIdTypeAT, resMetaSourceP, resTypeGenAT
-                                         , resTypeP, sProdCP, sProdP, superOrgNameP
+                                         , resTypeP, rightOrThrow, sProdCP, sProdP, superOrgNameP
                                          , titleP, unsafeSingleNodeValue, versioningP)
 import Nonbili.DOM                       (outerHTML)
 import Text.Email.Validate               (toString)
@@ -98,13 +100,20 @@ writeIdentifierType atName env idNode idType = do
 
 writeDate :: DocWriterRoot XsdDate
 writeDate env date = do
+  xsdDateStr <- dateTimeToStr date
   dateNdMay <- env.xevalRoot.nodeMay dateRootP
-  writeNodeMay date dateNdMay
+  writeNodeMay xsdDateStr dateNdMay
 
 writeModDate :: DocWriterRoot XsdDate
 writeModDate env date = do
+  xsdDateStr <- dateTimeToStr date
   dateNdMay <- env.xevalRoot.nodeMay lastModRootP
-  writeNodeMay date dateNdMay
+  writeNodeMay xsdDateStr dateNdMay
+
+dateTimeToStr :: XsdDate -> Effect NonEmptyString
+dateTimeToStr date = do
+  dateStr <- JSDate.toISOString $  JSDate.fromDateTime date
+  rightOrThrow $ readNonEmptyString "(generic date)" dateStr
 
 writeRelIdentifiers :: DocWriterRoot (NonEmptyArray RelatedIdentifier)
 writeRelIdentifiers env relIds = for_ relIds (\relId -> do
@@ -138,7 +147,7 @@ writeBasicMetadata env prodNd bm = do
   creatorNd <- map toNode $ createAppendRecEle env bmNd creatorP
   setTextContent (toStr bm.creator) creatorNd
   pubYearNd <- map toNode $ createAppendRecEle env bmNd pubYearP
-  setTextContent (toStr bm.publicationYear) pubYearNd
+  setTextContent (show bm.publicationYear) pubYearNd
 
 writeResourceType :: DocWriter ResourceType
 writeResourceType env prodNd resType = do

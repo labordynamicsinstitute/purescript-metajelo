@@ -15,6 +15,8 @@ import Data.Array.NonEmpty               as NA
 import Data.Either                       (Either(..))
 import Data.Foldable                     (find)
 import Data.Maybe                        (Maybe(..), fromMaybe, isJust)
+import Data.String                       (trim)
+import Data.String.NonEmpty              (NonEmptyString, fromString)
 import Data.Traversable                  (sequence)
 import Data.XPath                        (at, root, (//), (/?))
 import Effect                            (Effect)
@@ -294,3 +296,15 @@ unsafeSingleNodeValue env ctxtNode xpath = do
     Nothing -> throw $ nodeErrMsg xpath
   where
     nodeErrMsg nodePath = "Couldn't find required node at: " <> nodePath
+
+readNonEmptyString :: String -> String -> Either String NonEmptyString
+readNonEmptyString field str =
+  let nesMay = fromString $ trim str in
+  case nesMay of
+    Nothing -> Left $ "Empty string found for " <> field
+    Just nes -> Right nes
+
+rightOrThrow :: forall a. Either String a -> Effect a
+rightOrThrow ei = case ei of
+  Right val -> pure val
+  Left err -> throw err

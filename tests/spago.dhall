@@ -9,6 +9,7 @@ You can edit this file as you like.
   , "console"
   , "foreign-object"
   , "psci-support"
+  , "stringutils"
   , "test-unit"
   , "web-dom-parser"
 ]
