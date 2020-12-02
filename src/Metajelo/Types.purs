@@ -6,7 +6,7 @@ module Metajelo.Types where
 import Prelude
 
 import Data.Array.NonEmpty                  (NonEmptyArray)
-import Data.DateTime                        (DateTime(..))
+import Data.DateTime                        (DateTime)
 import Data.Enum                            (class BoundedEnum, class Enum
                                             , class SmallBounded, upFromIncluding)
 import Data.Maybe                           (Maybe)
