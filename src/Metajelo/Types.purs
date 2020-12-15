@@ -6,9 +6,11 @@ module Metajelo.Types where
 import Prelude
 
 import Data.Array.NonEmpty                  (NonEmptyArray)
+import Data.DateTime                        (DateTime)
 import Data.Enum                            (class BoundedEnum, class Enum
                                             , class SmallBounded, upFromIncluding)
 import Data.Maybe                           (Maybe)
+import Data.Natural                         (Natural)
 import Data.Generic.Rep                     (class Generic)
 import Data.Generic.Rep.Bounded             as GBounded
 import Data.Generic.Rep.Eq                  (genericEq)
@@ -21,7 +23,7 @@ import Text.Email.Validate                  (EmailAddress)
 import Text.URL.Validate                    (URL)
 
 -- | Stand in for xs:date
-type XsdDate = NonEmptyString
+type XsdDate = DateTime
 
 type Format = NonEmptyString
 
@@ -110,7 +112,7 @@ type SupplementaryProduct = Record SupplementaryProductRows
 type BasicMetadataRows = (
   title :: NonEmptyString
 , creator :: NonEmptyString
-, publicationYear :: XsdDate
+, publicationYear :: Natural
 )
 type BasicMetadata = Record BasicMetadataRows
 
