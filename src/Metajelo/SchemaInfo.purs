@@ -9,23 +9,14 @@ import Foreign.Object as FO
 appliesToProductAttrDscr :: String
 appliesToProductAttrDscr = "appliesToProduct is true for policies that apply to this product. It may be absent, for example, if the creator of the record has pulled policies for an an institution from an external service (e.g. re3data), and has not explicitly annotated all the entries as applying to the product (or not)."
 
-locationTypeCTypDscr :: String
-locationTypeCTypDscr = "set of possible policies for this location"
-
-policyTypeCTypDscr :: String
-policyTypeCTypDscr = "appliesToProduct is true for policies that apply to this product. It may be absent, for example, if the creator of the record has pulled policies for an an institution from an external service (e.g. re3data), and has not explicitly annotated all the entries as applying to the product (or not)."
-
 recordTypeCTypDscr :: String
-recordTypeCTypDscr = "The link to the set of supplemenary products"
-
-supplementaryProductTypeCTypDscr :: String
-supplementaryProductTypeCTypDscr = "supplementary product was deposited"
+recordTypeCTypDscr = "metadata about the publication and links to unlimited number of suppementary products"
 
 dateEleDscr :: String
 dateEleDscr = "The date of the original creation of this metadata record"
 
 formatEleDscr :: String
-formatEleDscr = "Use file extension or MIME type where possible."
+formatEleDscr = "Technical format of the resource. Use file extension or MIME type where possible."
 
 institutionPoliciesEleDscr :: String
 institutionPoliciesEleDscr = "set of possible policies for this location"
@@ -34,16 +25,16 @@ lastModifiedEleDscr :: String
 lastModifiedEleDscr = "The date of the most recent modification of this recocrd"
 
 locationEleDscr :: String
-locationEleDscr = "supplementary product was deposited"
+locationEleDscr = "Metadata about a location (institution, archive, library) at which the supplementary product was deposited"
 
 recordEleDscr :: String
 recordEleDscr = "This is the root element. Defined as metadata describing the linkage of a pulication to supplementary products (data, software, etc.)"
 
 resourceTypeEleDscr :: String
-resourceTypeEleDscr = "same structure as in DataCite"
+resourceTypeEleDscr = "The type of the supplementary product. You may enter an additional free text description. The format is open, but the preferred format is a single term of some detail so that a pair can be formed with the sub-property. same structure as in DataCite"
 
 supplementaryProductEleDscr :: String
-supplementaryProductEleDscr = "Examples are software, data, audio, video, etc."
+supplementaryProductEleDscr = "An artifact associated with the resource corresponding to this record. Examples are software, data, audio, video, etc."
 
 supplementaryProductsEleDscr :: String
 supplementaryProductsEleDscr = "The link to the set of supplemenary products"
@@ -64,10 +55,7 @@ descrAttrMap = FO.fromHomogeneous {
 
 descrCTypMap :: FO.Object String
 descrCTypMap = FO.fromHomogeneous {
-  locationTypeCTyp: locationTypeCTypDscr
-, policyTypeCTyp: policyTypeCTypDscr
-, recordTypeCTyp: recordTypeCTypDscr
-, supplementaryProductTypeCTyp: supplementaryProductTypeCTypDscr
+  recordTypeCTyp: recordTypeCTypDscr
 }
 
 descrEleMap :: FO.Object String

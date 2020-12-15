@@ -13,8 +13,8 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import           Path
 import           System.Environment (getExecutablePath)
-import           Text.XML
-import           Text.XML.Cursor
+import           Text.XML        as X
+import           Text.XML.Cursor as X
 import           ZIO.Prelude
 import           ZIO.Trans
 
@@ -34,7 +34,7 @@ app = do
   let schemaFile = repoDir </> schemaRelPath
   xsd <- zlift $ readFile def (toFilePath schemaFile)
   let xsdCursor = fromDocument xsd
-  let noteCursors = xsdCursor $// element [i|{#{xmlSchema}}documentation|]
+  let noteCursors = xsdCursor $// element [i|{#{xmlSchema}}annotation|]
   let noteEleMap = makeNoteMap "element" noteCursors
   let noteAttrMap = makeNoteMap "attribute" noteCursors
   let noteCplxTypeMap = makeNoteMap "complexType" noteCursors
@@ -63,10 +63,10 @@ app = do
   writeSchemaInfoFile repoDir allDescrMaps
 
   -- Tests follow
-  let allNotes = xsdCursor $// element [i|{#{xmlSchema}}documentation|]  &// content
+  let allNotes = xsdCursor $// element [i|{#{xmlSchema}}annotation|]
   let allMapsTest = DM.toList allDescrMaps
   let allKeysTest = join $ (\(s,m) -> (\k -> k <> s) <$> DM.keys m) <$> allMapsTest
-  zlift $ T.putStrLn $ T.intercalate "\n\n" allNotes
+  -- zlift $ T.putStrLn $ T.intercalate "\n\n" allNotes
   -- let allDescrKeys = DS.unions $ DS.fromList <$> (DM.elems $ DM.keys <$> allDescrMaps)
   assertTrue [iii|length allNotes == length allKeysTest ::
                 #{length allNotes} == #{length allKeysTest}|]
@@ -77,11 +77,11 @@ app = do
       >>= (DM.lookup "name") & fromMayStr
     makeNoteMap :: String -> [Cursor] -> DM.Map T.Text T.Text
     makeNoteMap eTag noteCursors = noteCursors <&> (\nCurs -> (
-        (nCurs $/ ancestor >=> element [i|{#{xmlSchema}}#{eTag}|]
+        (nCurs $| X.parent >=> element [i|{#{xmlSchema}}#{eTag}|]
           &| (node >>> getEle)) & getFirstEleName
-      , (nCurs $/ content) & T.concat
-      )) & DM.fromList & (DM.delete "") <&> T.strip <&> (T.words >>> T.unwords)
-
+      , (nCurs $/ element [i|{#{xmlSchema}}documentation|] &/ content) & (T.intercalate " ")
+      )) & (DM.fromListWith joinSp) & (DM.delete "")
+        <&> T.strip <&> (T.words >>> T.unwords)
 
 writeSchemaInfoFile :: Path Abs Dir -> DM.Map T.Text (DM.Map T.Text T.Text)
   -> AppEnv ()
@@ -174,9 +174,16 @@ getEle :: Node -> Maybe Element
 getEle (NodeElement e) = Just e 
 getEle _ = Nothing
 
+-- docAnnot :: Axis
+-- docAnnot = element [i|{#{xmlSchema}}annotation|]
+--   &/ element [i|{#{xmlSchema}}documentation|]
+
 fromMayStr :: IsString a => Maybe a -> a
 fromMayStr (Just a) = a
 fromMayStr Nothing = fromString ""
+
+joinSp :: T.Text -> T.Text -> T.Text
+joinSp a b = a <> " " <> b
 
 xmlSchema :: String
 xmlSchema = "http://www.w3.org/2001/XMLSchema"
