@@ -7,8 +7,9 @@ import           Control.Arrow ((>>>))
 import qualified Data.Map.Strict as DM
 import           Data.Maybe (catMaybes)
 import           Data.String (IsString(..))
-import           Data.String.Interpolate ( i )
+import           Data.String.Interpolate ( i, __i )
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import           Path
 import           System.Environment (getExecutablePath)
 import           Text.XML
@@ -34,27 +35,60 @@ app = do
   xsd <- zlift $ readFile def (toFilePath schemaFile)
   let xsdCursor = fromDocument xsd
   let noteCursors = xsdCursor $// element [i|{#{xmlSchema}}documentation|]
-  let noteEleMap = makeNoteEleMap noteCursors
-  -- noteEleMap :: DM.Map T.Text T.Text <- pure $ DM.fromList $ noteCursors <&> (\nCurs -> (
-  --     -- (nCurs & ancestor) <&> (node >>> getEle) & getFirstEleName
-  --     (nCurs $/ ancestor >=> element [i|{#{xmlSchema}}element|]
-  --       &| (node >>> getEle)) & getFirstEleName
-  --   , (nCurs $/ content) & T.concat
-  --   ))
+  let noteEleMap = makeNoteMap "element" noteCursors
+  let noteAttrMap = makeNoteMap "attribute" noteCursors
+  let noteCplxTypeMap = makeNoteMap "complexType" noteCursors
+  let noteSimpTypeMap = makeNoteMap "simpleType" noteCursors
+  -- simpleType can be annotated directly
+  -- element belongs to complexType; the convetion is the element is a record field
+  --   with name used as-is, exept the first character may be lower-cased in PureScript
+  --   if the name is upper case in the XSD
+  -- attribute is the same as element in this regard
+
+  -- In order to keep things relatively simple, we can build up a record,
+  -- where the keys are fully-qualified names
+  -- that line up with the record-type names, e.g. "someComplexType.someElement.someAttribute"
+  -- This means, for each of the elements and attributes above, we also need a Haskell Map
+  -- that allows us to look up the "owner" type. The PureScript record will be shapped statically,
+  -- and we can implement a counter so that we verify we've used all of the found Haskell
+  -- documentation strings.
   let allNotes = xsdCursor $// element [i|{#{xmlSchema}}documentation|]  &// content 
   putStrLn $ show allNotes
-  putStrLn $ show noteEleMap
-  -- putStrLn $ show $ xsd
+  -- zlift $ T.putStrLn $ T.intercalate "\n\n" $ descrEntries noteEleMap
+  writeSchemaInfoFile repoDir noteEleMap
   where
     getFirstEleName :: [Maybe Element] -> T.Text
     getFirstEleName els = els & catMaybes & headMay <&> elementAttributes
       >>= (DM.lookup "name") & fromMayStr
-    makeNoteEleMap :: [Cursor] -> DM.Map T.Text T.Text
-    makeNoteEleMap noteCursors = noteCursors <&> (\nCurs -> (
-        (nCurs $/ ancestor >=> element [i|{#{xmlSchema}}element|]
+    makeNoteMap :: String -> [Cursor] -> DM.Map T.Text T.Text
+    makeNoteMap eTag noteCursors = noteCursors <&> (\nCurs -> (
+        (nCurs $/ ancestor >=> element [i|{#{xmlSchema}}#{eTag}|]
           &| (node >>> getEle)) & getFirstEleName
       , (nCurs $/ content) & T.concat
       )) & DM.fromList & (DM.delete "") <&> T.strip <&> (T.words >>> T.unwords)
+
+
+makeDescrEntry :: (T.Text, T.Text) -> T.Text
+makeDescrEntry kv = [__i|#{fst kv}Descr :: String
+                         #{fst kv}Descr = "#{snd kv}"|]
+
+writeSchemaInfoFile :: Path Abs Dir -> DM.Map T.Text T.Text -> AppEnv ()
+writeSchemaInfoFile repoDir descrMap =
+  zlift $ T.writeFile (toFilePath outFile) outTxt
+  where
+    outFile = repoDir </> metajeloSrcDir </> infoFile
+    outTxt = descrHeader <> "\n\n" <> (T.intercalate "\n\n" $ descrEntries descrMap)
+
+descrEntries :: DM.Map T.Text T.Text -> [T.Text]
+descrEntries descrMap = makeDescrEntry <$> DM.toList descrMap
+--
+descrHeader :: T.Text
+descrHeader =
+  [__i|-- | This module contains additional information about
+       -- | the Metajelo Schema.
+       module Metajelo.#{infoModule} where
+       |]
+
 
 getRepoDir :: AppEnv (Path Abs Dir)
 getRepoDir = do
@@ -69,6 +103,15 @@ getRepoDir = do
     cabalIn = "metajelo-templates/dist-newstyle"
     breakOnDir bDir ePath = zlift $ parseAbsDir $ T.unpack $ fst $ T.breakOn
       bDir ePath
+
+metajeloSrcDir :: Path Rel Dir
+metajeloSrcDir = [reldir|src/Metajelo|]
+
+infoFile :: Path Rel File
+infoFile = [relfile|SchemaInfo.purs|]
+--
+infoModule :: String
+infoModule = takeWhile (/= '.') $ toFilePath infoFile
 
 schemaRelPath :: Path Rel File
 schemaRelPath = [relfile|schema/metajelo.xsd|]

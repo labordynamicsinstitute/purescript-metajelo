@@ -5,10 +5,12 @@
 module ZIO.Prelude (
   module ZIO.Prelude
 , (.)
+, (<>)
 , ($)
 , (&)
 , (<$>)
 , (<&>)
+, (/=)
 , Bool(..)
 , Maybe(..)
 , IO
@@ -17,7 +19,7 @@ module ZIO.Prelude (
 , Show(..)
 , String
 , const
-, filter
+, filter, takeWhile
 , flip
 , fst, snd
 , null
@@ -29,7 +31,7 @@ import           Data.Function ((&))
 import           Data.Functor ((<&>))
 import           Path
 import qualified Prelude as P
-import           Prelude ((.), ($), (<$>), Bool(..), Maybe(..), IO, Applicative(..), Foldable(..), Show(..), String, const, filter, flip, fst, snd, null, and, or, not)
+import           Prelude ((.), (<>), ($), (<$>), (/=), Bool(..), Maybe(..), IO, Applicative(..), Foldable(..), Show(..), String, const, filter, takeWhile, flip, fst, snd, null, and, or, not)
 
 import           ZIO.Trans
 
