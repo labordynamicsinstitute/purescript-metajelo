@@ -7,6 +7,7 @@ You can edit this file as you like.
     [
       "email-validate"
     , "enums"
+    , "foreign-object"
     , "generics-rep"
     , "globals"
     , "js-date"

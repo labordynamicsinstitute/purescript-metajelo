@@ -67,10 +67,21 @@ app = do
       , (nCurs $/ content) & T.concat
       )) & DM.fromList & (DM.delete "") <&> T.strip <&> (T.words >>> T.unwords)
 
+descrSfx :: T.Text
+descrSfx = "Descr"
 
 makeDescrEntry :: (T.Text, T.Text) -> T.Text
-makeDescrEntry kv = [__i|#{fst kv}Descr :: String
-                         #{fst kv}Descr = "#{snd kv}"|]
+makeDescrEntry kv = [__i|#{fst kv}#{descrSfx} :: String
+                         #{fst kv}#{descrSfx} = "#{snd kv}"|]
+
+makeDescrMap :: [T.Text] -> T.Text
+makeDescrMap dKeys = dsHeader <> "\n  " <> dsEntries <>  "\n}"
+  where
+    dsHeader = [__i|descrMap :: FO.Object String
+                    descrMap = FO.fromHomogeneous {|]
+    dsEntry :: T.Text -> T.Text
+    dsEntry k = [__i|#{k}: #{k}#{descrSfx}|]
+    dsEntries = T.intercalate "\n, " (dsEntry <$> dKeys)
 
 writeSchemaInfoFile :: Path Abs Dir -> DM.Map T.Text T.Text -> AppEnv ()
 writeSchemaInfoFile repoDir descrMap =
@@ -78,6 +89,8 @@ writeSchemaInfoFile repoDir descrMap =
   where
     outFile = repoDir </> metajeloSrcDir </> infoFile
     outTxt = descrHeader <> "\n\n" <> (T.intercalate "\n\n" $ descrEntries descrMap)
+             <> "\n\n" <> (makeDescrMap $ DM.keys descrMap)
+             <> "\n" -- newline at EOF
 
 descrEntries :: DM.Map T.Text T.Text -> [T.Text]
 descrEntries descrMap = makeDescrEntry <$> DM.toList descrMap
@@ -87,6 +100,8 @@ descrHeader =
   [__i|-- | This module contains additional information about
        -- | the Metajelo Schema.
        module Metajelo.#{infoModule} where
+
+       import Foreign.Object as FO
        |]
 
 

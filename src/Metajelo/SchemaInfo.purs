@@ -2,6 +2,8 @@
 -- | the Metajelo Schema.
 module Metajelo.SchemaInfo where
 
+import Foreign.Object as FO
+
 dateDescr :: String
 dateDescr = "The date of the original creation of this metadata record"
 
@@ -28,3 +30,16 @@ supplementaryProductDescr = "Examples are software, data, audio, video, etc."
 
 supplementaryProductsDescr :: String
 supplementaryProductsDescr = "The link to the set of supplemenary products"
+
+descrMap :: FO.Object String
+descrMap = FO.fromHomogeneous {
+  date: dateDescr
+, format: formatDescr
+, institutionPolicies: institutionPoliciesDescr
+, lastModified: lastModifiedDescr
+, location: locationDescr
+, record: recordDescr
+, resourceType: resourceTypeDescr
+, supplementaryProduct: supplementaryProductDescr
+, supplementaryProducts: supplementaryProductsDescr
+}
