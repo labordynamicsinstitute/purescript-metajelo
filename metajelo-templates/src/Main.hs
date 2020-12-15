@@ -5,10 +5,10 @@ module Main where
 
 import           Control.Arrow ((>>>))
 import qualified Data.Map.Strict as DM
-import qualified Data.Set as DS
+-- import qualified Data.Set as DS
 import           Data.Maybe (catMaybes)
 import           Data.String (IsString(..))
-import           Data.String.Interpolate ( i, __i )
+import           Data.String.Interpolate ( i, iii, __i )
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import           Path
@@ -59,15 +59,18 @@ app = do
   -- that allows us to look up the "owner" type. The PureScript record will be shapped statically,
   -- and we can implement a counter so that we verify we've used all of the found Haskell
   -- documentation strings.
-  let allNotes = xsdCursor $// element [i|{#{xmlSchema}}documentation|]  &// content 
-  putStrLn $ show allNotes
+
   writeSchemaInfoFile repoDir allDescrMaps
-  -- putStrLn $ show $ length allNotes
-  -- putStrLn $ show $ DM.size noteEleMap
-  let allDescrKeys = DS.unions $ DS.fromList <$> (DM.elems $ DM.keys <$> allDescrMaps)
-  assertTrue [i|(length allNotes == length allDescrKeys) ::
-                #{length allNotes} == #{length allDescrKeys}|]
-    (length allNotes == length allDescrKeys)
+
+  -- Tests follow
+  let allNotes = xsdCursor $// element [i|{#{xmlSchema}}documentation|]  &// content
+  let allMapsTest = DM.toList allDescrMaps
+  let allKeysTest = join $ (\(s,m) -> (\k -> k <> s) <$> DM.keys m) <$> allMapsTest
+  zlift $ T.putStrLn $ T.intercalate "\n\n" allNotes
+  -- let allDescrKeys = DS.unions $ DS.fromList <$> (DM.elems $ DM.keys <$> allDescrMaps)
+  assertTrue [iii|length allNotes == length allKeysTest ::
+                #{length allNotes} == #{length allKeysTest}|]
+    (length allNotes == length allKeysTest)
   where
     getFirstEleName :: [Maybe Element] -> T.Text
     getFirstEleName els = els & catMaybes & headMay <&> elementAttributes
