@@ -4,42 +4,88 @@ module Metajelo.SchemaInfo where
 
 import Foreign.Object as FO
 
-dateDescr :: String
-dateDescr = "The date of the original creation of this metadata record"
 
-formatDescr :: String
-formatDescr = "Use file extension or MIME type where possible."
 
-institutionPoliciesDescr :: String
-institutionPoliciesDescr = "set of possible policies for this location"
+appliesToProductAttrDscr :: String
+appliesToProductAttrDscr = "appliesToProduct is true for policies that apply to this product. It may be absent, for example, if the creator of the record has pulled policies for an an institution from an external service (e.g. re3data), and has not explicitly annotated all the entries as applying to the product (or not)."
 
-lastModifiedDescr :: String
-lastModifiedDescr = "The date of the most recent modification of this recocrd"
+locationTypeCTypDscr :: String
+locationTypeCTypDscr = "set of possible policies for this location"
 
-locationDescr :: String
-locationDescr = "supplementary product was deposited"
+policyTypeCTypDscr :: String
+policyTypeCTypDscr = "appliesToProduct is true for policies that apply to this product. It may be absent, for example, if the creator of the record has pulled policies for an an institution from an external service (e.g. re3data), and has not explicitly annotated all the entries as applying to the product (or not)."
 
-recordDescr :: String
-recordDescr = "This is the root element. Defined as metadata describing the linkage of a pulication to supplementary products (data, software, etc.)"
+recordTypeCTypDscr :: String
+recordTypeCTypDscr = "The link to the set of supplemenary products"
 
-resourceTypeDescr :: String
-resourceTypeDescr = "same structure as in DataCite"
+supplementaryProductTypeCTypDscr :: String
+supplementaryProductTypeCTypDscr = "supplementary product was deposited"
 
-supplementaryProductDescr :: String
-supplementaryProductDescr = "Examples are software, data, audio, video, etc."
+dateEleDscr :: String
+dateEleDscr = "The date of the original creation of this metadata record"
 
-supplementaryProductsDescr :: String
-supplementaryProductsDescr = "The link to the set of supplemenary products"
+formatEleDscr :: String
+formatEleDscr = "Use file extension or MIME type where possible."
 
-descrMap :: FO.Object String
-descrMap = FO.fromHomogeneous {
-  date: dateDescr
-, format: formatDescr
-, institutionPolicies: institutionPoliciesDescr
-, lastModified: lastModifiedDescr
-, location: locationDescr
-, record: recordDescr
-, resourceType: resourceTypeDescr
-, supplementaryProduct: supplementaryProductDescr
-, supplementaryProducts: supplementaryProductsDescr
+institutionPoliciesEleDscr :: String
+institutionPoliciesEleDscr = "set of possible policies for this location"
+
+lastModifiedEleDscr :: String
+lastModifiedEleDscr = "The date of the most recent modification of this recocrd"
+
+locationEleDscr :: String
+locationEleDscr = "supplementary product was deposited"
+
+recordEleDscr :: String
+recordEleDscr = "This is the root element. Defined as metadata describing the linkage of a pulication to supplementary products (data, software, etc.)"
+
+resourceTypeEleDscr :: String
+resourceTypeEleDscr = "same structure as in DataCite"
+
+supplementaryProductEleDscr :: String
+supplementaryProductEleDscr = "Examples are software, data, audio, video, etc."
+
+supplementaryProductsEleDscr :: String
+supplementaryProductsEleDscr = "The link to the set of supplemenary products"
+
+identifierTypeSTypDscr :: String
+identifierTypeSTypDscr = "The type of the RelatedIdentifier."
+
+relationTypeSTypDscr :: String
+relationTypeSTypDscr = "Description of the relationship of the resource being registered (A) and the related resource (B)."
+
+resourceTypeSTypDscr :: String
+resourceTypeSTypDscr = "The general type of a resource."
+
+descrAttrMap :: FO.Object String
+descrAttrMap = FO.fromHomogeneous {
+  appliesToProductAttr: appliesToProductAttrDscr
+}
+
+descrCTypMap :: FO.Object String
+descrCTypMap = FO.fromHomogeneous {
+  locationTypeCTyp: locationTypeCTypDscr
+, policyTypeCTyp: policyTypeCTypDscr
+, recordTypeCTyp: recordTypeCTypDscr
+, supplementaryProductTypeCTyp: supplementaryProductTypeCTypDscr
+}
+
+descrEleMap :: FO.Object String
+descrEleMap = FO.fromHomogeneous {
+  dateEle: dateEleDscr
+, formatEle: formatEleDscr
+, institutionPoliciesEle: institutionPoliciesEleDscr
+, lastModifiedEle: lastModifiedEleDscr
+, locationEle: locationEleDscr
+, recordEle: recordEleDscr
+, resourceTypeEle: resourceTypeEleDscr
+, supplementaryProductEle: supplementaryProductEleDscr
+, supplementaryProductsEle: supplementaryProductsEleDscr
+}
+
+descrSTypMap :: FO.Object String
+descrSTypMap = FO.fromHomogeneous {
+  identifierTypeSTyp: identifierTypeSTypDscr
+, relationTypeSTyp: relationTypeSTypDscr
+, resourceTypeSTyp: resourceTypeSTypDscr
 }

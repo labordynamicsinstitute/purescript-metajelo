@@ -5,6 +5,7 @@ module Main where
 
 import           Control.Arrow ((>>>))
 import qualified Data.Map.Strict as DM
+import qualified Data.Set as DS
 import           Data.Maybe (catMaybes)
 import           Data.String (IsString(..))
 import           Data.String.Interpolate ( i, __i )
@@ -28,7 +29,6 @@ type AppEnv a = ZIO Env SomeNonPseudoException a
 
 app :: AppEnv ()
 app = do
-  putStrLn "hello from ZIO"
   repoDir <- getRepoDir
   putStrLn $ show repoDir
   let schemaFile = repoDir </> schemaRelPath
@@ -39,6 +39,13 @@ app = do
   let noteAttrMap = makeNoteMap "attribute" noteCursors
   let noteCplxTypeMap = makeNoteMap "complexType" noteCursors
   let noteSimpTypeMap = makeNoteMap "simpleType" noteCursors
+  allDescrMaps <- pure $ DM.fromList [
+      (eleSfx, noteEleMap)
+    , (attSfx, noteAttrMap)
+    , (cTypeSfx, noteCplxTypeMap)
+    , (sTypeSfx, noteSimpTypeMap)
+    ]
+
   -- simpleType can be annotated directly
   -- element belongs to complexType; the convetion is the element is a record field
   --   with name used as-is, exept the first character may be lower-cased in PureScript
@@ -54,8 +61,13 @@ app = do
   -- documentation strings.
   let allNotes = xsdCursor $// element [i|{#{xmlSchema}}documentation|]  &// content 
   putStrLn $ show allNotes
-  -- zlift $ T.putStrLn $ T.intercalate "\n\n" $ descrEntries noteEleMap
-  writeSchemaInfoFile repoDir noteEleMap
+  writeSchemaInfoFile repoDir allDescrMaps
+  -- putStrLn $ show $ length allNotes
+  -- putStrLn $ show $ DM.size noteEleMap
+  let allDescrKeys = DS.unions $ DS.fromList <$> (DM.elems $ DM.keys <$> allDescrMaps)
+  assertTrue [i|(length allNotes == length allDescrKeys) ::
+                #{length allNotes} == #{length allDescrKeys}|]
+    (length allNotes == length allDescrKeys)
   where
     getFirstEleName :: [Maybe Element] -> T.Text
     getFirstEleName els = els & catMaybes & headMay <&> elementAttributes
@@ -67,33 +79,57 @@ app = do
       , (nCurs $/ content) & T.concat
       )) & DM.fromList & (DM.delete "") <&> T.strip <&> (T.words >>> T.unwords)
 
-descrSfx :: T.Text
-descrSfx = "Descr"
 
-makeDescrEntry :: (T.Text, T.Text) -> T.Text
-makeDescrEntry kv = [__i|#{fst kv}#{descrSfx} :: String
-                         #{fst kv}#{descrSfx} = "#{snd kv}"|]
-
-makeDescrMap :: [T.Text] -> T.Text
-makeDescrMap dKeys = dsHeader <> "\n  " <> dsEntries <>  "\n}"
-  where
-    dsHeader = [__i|descrMap :: FO.Object String
-                    descrMap = FO.fromHomogeneous {|]
-    dsEntry :: T.Text -> T.Text
-    dsEntry k = [__i|#{k}: #{k}#{descrSfx}|]
-    dsEntries = T.intercalate "\n, " (dsEntry <$> dKeys)
-
-writeSchemaInfoFile :: Path Abs Dir -> DM.Map T.Text T.Text -> AppEnv ()
-writeSchemaInfoFile repoDir descrMap =
+writeSchemaInfoFile :: Path Abs Dir -> DM.Map T.Text (DM.Map T.Text T.Text)
+  -> AppEnv ()
+writeSchemaInfoFile repoDir allMapsMap =
   zlift $ T.writeFile (toFilePath outFile) outTxt
   where
+    allMaps :: [(T.Text, DM.Map T.Text T.Text)]
+    allMaps = DM.toList allMapsMap
+    allKeys = (\(s,m) -> (s, DM.keys m)) <$> allMaps
     outFile = repoDir </> metajeloSrcDir </> infoFile
-    outTxt = descrHeader <> "\n\n" <> (T.intercalate "\n\n" $ descrEntries descrMap)
-             <> "\n\n" <> (makeDescrMap $ DM.keys descrMap)
+    descrVarTxt = T.intercalate "\n\n" $ join $ (uncurry descrEntries) <$> allMaps
+    descrMapTxt = T.intercalate "\n\n" $ (uncurry makeDescrMap) <$> allKeys
+    outTxt = descrHeader <> "\n\n"
+             <> "\n\n" <> descrVarTxt
+             <> "\n\n" <> descrMapTxt
              <> "\n" -- newline at EOF
 
-descrEntries :: DM.Map T.Text T.Text -> [T.Text]
-descrEntries descrMap = makeDescrEntry <$> DM.toList descrMap
+dscrSfx :: T.Text
+dscrSfx = "Dscr"
+
+eleSfx :: T.Text
+eleSfx = "Ele"
+
+attSfx :: T.Text
+attSfx = "Attr"
+
+cTypeSfx :: T.Text
+cTypeSfx = "CTyp"
+
+sTypeSfx :: T.Text
+sTypeSfx = "STyp"
+
+-- allSfx :: T.Text
+-- allSfx = "All"
+
+makeDescrMap :: T.Text -> [T.Text] -> T.Text
+makeDescrMap sfx dKeys = dsHeader <> "\n  " <> dsEntries <>  "\n}"
+  where
+    dsHeader = [__i|descr#{sfx}Map :: FO.Object String
+                    descr#{sfx}Map = FO.fromHomogeneous {|]
+    dsEntry :: T.Text -> T.Text
+    dsEntry k = [__i|#{k}#{sfx}: #{k}#{sfx}#{dscrSfx}|]
+    dsEntries = T.intercalate "\n, " (dsEntry <$> dKeys)
+
+descrEntries :: T.Text -> DM.Map T.Text T.Text -> [T.Text]
+descrEntries sfx descrMap = makeDescrEntry sfx <$> DM.toList descrMap
+--
+makeDescrEntry :: T.Text -> (T.Text, T.Text) -> T.Text
+makeDescrEntry sfx kv = [__i|#{fst kv}#{sfx}#{dscrSfx} :: String
+                         #{fst kv}#{sfx}#{dscrSfx} = "#{snd kv}"|]
+
 --
 descrHeader :: T.Text
 descrHeader =
@@ -141,3 +177,7 @@ fromMayStr Nothing = fromString ""
 
 xmlSchema :: String
 xmlSchema = "http://www.w3.org/2001/XMLSchema"
+
+assertTrue :: String -> Bool -> AppEnv ()
+assertTrue _ True = pure ()
+assertTrue msg False = throwString $ "Failed: " <> msg

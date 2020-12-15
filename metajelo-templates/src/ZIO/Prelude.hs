@@ -10,6 +10,7 @@ module ZIO.Prelude (
 , (&)
 , (<$>)
 , (<&>)
+, (==)
 , (/=)
 , Bool(..)
 , Maybe(..)
@@ -23,7 +24,9 @@ module ZIO.Prelude (
 , flip
 , fst, snd
 , null
+, sum
 , and, or, not
+, uncurry
 ) where
 
 import qualified Control.Exception.Safe as SX
@@ -31,7 +34,7 @@ import           Data.Function ((&))
 import           Data.Functor ((<&>))
 import           Path
 import qualified Prelude as P
-import           Prelude ((.), (<>), ($), (<$>), (/=), Bool(..), Maybe(..), IO, Applicative(..), Foldable(..), Show(..), String, const, filter, takeWhile, flip, fst, snd, null, and, or, not)
+import           Prelude ((.), (<>), ($), (<$>), (==), (/=), Bool(..), Maybe(..), IO, Applicative(..), Foldable(..), Show(..), String, const, filter, takeWhile, flip, fst, snd, null, sum, and, or, not, uncurry)
 
 import           ZIO.Trans
 
