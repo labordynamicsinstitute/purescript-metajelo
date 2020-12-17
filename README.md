@@ -27,6 +27,9 @@ https://raw.githubusercontent.com/labordynamicsinstitute/metajelo/master/schema/
 
 For details on how the build works, see the [template README](metajelo-templates/README.md). 
 
+Note that although the source generation is tested through CI, it is not
+*released* as part of CI, so this will still need to be done manually.
+
 ## Docker
 
 * First build the image: `./build-docker.sh`
