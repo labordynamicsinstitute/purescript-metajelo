@@ -35,7 +35,8 @@ import           Data.Functor ((<&>))
 import           Path
 import qualified Prelude as P
 import           Prelude ((.), (<>), ($), (<$>), (==), (/=), Bool(..), Maybe(..), IO, Applicative(..), Foldable(..), Show(..), String, const, filter, takeWhile, flip, fst, snd, null, sum, and, or, not, uncurry)
-
+import           System.Exit as SE
+import           System.IO.Unsafe (unsafePerformIO)
 import           ZIO.Trans
 
 putStrLn :: String -> ZIO r SomeNonPseudoException () 
@@ -59,3 +60,16 @@ putStrLnIO = P.putStrLn
 
 headMay :: Foldable f => f a -> Maybe a
 headMay = foldr (const . Just) Nothing
+
+-- Attempt to handle any exception.
+-- Not entirely sure how "safe" this is
+-- TODO: add to ZIO
+mapZErrorOrExit :: ZIO r  SX.SomeException a -> ZIO r SomeNonPseudoException a
+mapZErrorOrExit m = mapZError mapZE m
+  -- (e -> SomeNonPseudoException) 
+  where
+    mapZE ::  SX.SomeException -> SomeNonPseudoException
+    mapZE e = case SX.fromException e of
+      Just se -> se
+      Nothing ->
+        unsafePerformIO $ SE.die  "Received a PseudoException, exiting! "

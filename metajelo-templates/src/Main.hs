@@ -5,12 +5,14 @@ module Main where
 
 import           Control.Arrow ((>>>))
 import qualified Data.Map.Strict as DM
--- import qualified Data.Set as DS
 import           Data.Maybe (catMaybes)
 import           Data.String (IsString(..))
 import           Data.String.Interpolate ( i, iii, __i )
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Encoding as T
 import qualified Data.Text.IO as T
+import           Network.HTTP.Simple (httpBS, getResponseBody)
 import           Path
 import           System.Environment (getExecutablePath)
 import           Text.XML        as X
@@ -30,9 +32,12 @@ type AppEnv a = ZIO Env SomeNonPseudoException a
 app :: AppEnv ()
 app = do
   repoDir <- getRepoDir
-  putStrLn $ show repoDir
-  let schemaFile = repoDir </> schemaRelPath
-  xsd <- zlift $ readFile def (toFilePath schemaFile)
+  let schemaVersionFile = repoDir </> schemaVerRelPath
+  mjVer <- T.strip <$> (zlift $ T.readFile $ toFilePath schemaVersionFile)
+  let schemaUrl = [i|#{mjRawRepo}metajelo/master/schema/#{mjVer}/reproMetadata.xml|]
+  rsp <- zlift $ httpBS schemaUrl
+  let xsdTxt = T.decodeUtf8 $ getResponseBody rsp
+  xsd <- mapZErrorOrExit $ liftEither $ parseText def $ TL.fromStrict xsdTxt
   let xsdCursor = fromDocument xsd
   let noteCursors = xsdCursor $// element [i|{#{xmlSchema}}annotation|]
   let noteEleMap = makeNoteMap "element" noteCursors
@@ -45,20 +50,6 @@ app = do
     , (cTypeSfx, noteCplxTypeMap)
     , (sTypeSfx, noteSimpTypeMap)
     ]
-
-  -- simpleType can be annotated directly
-  -- element belongs to complexType; the convetion is the element is a record field
-  --   with name used as-is, exept the first character may be lower-cased in PureScript
-  --   if the name is upper case in the XSD
-  -- attribute is the same as element in this regard
-
-  -- In order to keep things relatively simple, we can build up a record,
-  -- where the keys are fully-qualified names
-  -- that line up with the record-type names, e.g. "someComplexType.someElement.someAttribute"
-  -- This means, for each of the elements and attributes above, we also need a Haskell Map
-  -- that allows us to look up the "owner" type. The PureScript record will be shapped statically,
-  -- and we can implement a counter so that we verify we've used all of the found Haskell
-  -- documentation strings.
 
   writeSchemaInfoFile repoDir allDescrMaps
 
@@ -114,9 +105,6 @@ cTypeSfx = "CTyp"
 sTypeSfx :: T.Text
 sTypeSfx = "STyp"
 
--- allSfx :: T.Text
--- allSfx = "All"
-
 makeDescrMap :: T.Text -> [T.Text] -> T.Text
 makeDescrMap sfx dKeys = dsHeader <> "\n  " <> dsEntries <>  "\n}"
   where
@@ -167,8 +155,11 @@ infoFile = [relfile|SchemaInfo.purs|]
 infoModule :: String
 infoModule = takeWhile (/= '.') $ toFilePath infoFile
 
-schemaRelPath :: Path Rel File
-schemaRelPath = [relfile|schema/metajelo.xsd|]
+schemaVerRelPath :: Path Rel File
+schemaVerRelPath = [relfile|SCHEMA_VERSION|]
+
+mjRawRepo :: String
+mjRawRepo = "https://raw.githubusercontent.com/labordynamicsinstitute/"
 
 getEle :: Node -> Maybe Element
 getEle (NodeElement e) = Just e 

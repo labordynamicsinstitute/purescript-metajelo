@@ -32,3 +32,5 @@ $ nix-shell shell.nix --run "cabal build"
 ```
 nix-shell shell.nix --run "cabal exec metajelo-templates"
 ```
+
+You can also combine the build and run commands within the `--run` argument.

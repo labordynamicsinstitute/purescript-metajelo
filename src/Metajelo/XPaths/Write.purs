@@ -112,7 +112,7 @@ writeModDate env date = do
 
 dateTimeToStr :: XsdDate -> Effect NonEmptyString
 dateTimeToStr date = do
-  dateStr <- JSDate.toISOString $  JSDate.fromDateTime date
+  dateStr <- JSDate.toISOString $ JSDate.fromDateTime date
   rightOrThrow $ readNonEmptyString "(generic date)" dateStr
 
 writeRelIdentifiers :: DocWriterRoot (NonEmptyArray RelatedIdentifier)

@@ -8,6 +8,14 @@ API docs are available [on Pursuit](https://pursuit.purescript.org/packages/pure
 
 # Buidling
 
+Specify the desired (typically latest) schema version in the SCHEMA_VERSION file;
+this should be part of the URL for the version file located in the official
+metajelo repository: e.g., `v0.8` for:
+
+```
+https://github.com/labordynamicsinstitute/metajelo/blob/master/schema/v0.8/reproMetadata.xml
+```
+
 ## Docker
 
 * First build the image: `./build-docker.sh`

@@ -103,6 +103,7 @@ readModDate env = do
 parseDate :: NonEmptyString -> Effect XsdDate
 parseDate dateStrNE = do
   let dateStr = toString dateStrNE
+  -- We have to handle some odd edge cases in the browser parser
   dateStrNoZ <- pure $ case stripSuffix (Pattern "Z") dateStr of
     Just noZ -> if S.length noZ <= 10 then noZ <> expandedZ else dateStr
     Nothing -> dateStr

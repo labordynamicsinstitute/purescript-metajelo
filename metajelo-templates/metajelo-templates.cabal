@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8decdd148307a900e793f3da1dbbb730e6470a5574f4b436bcafca733dab391c
+-- hash: ce80f3ba67eab2f8bbd091453a7a01376726cf52d76078472bd35205196b0be2
 
 name:           metajelo-templates
 version:        0.1.0.0
@@ -38,6 +38,7 @@ executable metajelo-templates
     , containers
     , directory
     , exceptions
+    , http-conduit
     , path
     , path-io
     , safe-exceptions
