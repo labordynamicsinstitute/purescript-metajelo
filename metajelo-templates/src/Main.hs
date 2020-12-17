@@ -37,7 +37,7 @@ app = do
   let schemaUrl = [i|#{mjRawRepo}metajelo/master/schema/#{mjVer}/reproMetadata.xml|]
   rsp <- zlift $ httpBS schemaUrl
   let xsdTxt = T.decodeUtf8 $ getResponseBody rsp
-  xsd <- liftEither $ parseText def $ TL.fromStrict xsdTxt
+  xsd <- mapZErrorOrExit $ liftEither $ parseText def $ TL.fromStrict xsdTxt
   let xsdCursor = fromDocument xsd
   let noteCursors = xsdCursor $// element [i|{#{xmlSchema}}annotation|]
   let noteEleMap = makeNoteMap "element" noteCursors
