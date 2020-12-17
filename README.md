@@ -8,6 +8,12 @@ API docs are available [on Pursuit](https://pursuit.purescript.org/packages/pure
 
 # Buidling
 
+In addition to the methods below, you may also check
+[.github/workflows/ci.yml](.github/workflows/ci.yml), which includes build
+commands run as part of the CI.
+
+## A note on source generation
+
 The build depends on the Metajelo schema (xsd file) to generate some of
 the source code.
 Specify the desired (typically latest) schema version in
@@ -19,7 +25,7 @@ metajelo repository: e.g., `v0.8` for:
 https://raw.githubusercontent.com/labordynamicsinstitute/metajelo/master/schema/v0.8/reproMetadata.xml
 ```
 
-For details on how the build works, see the [template README](metajelo-templates/README.md).
+For details on how the build works, see the [template README](metajelo-templates/README.md). 
 
 ## Docker
 
