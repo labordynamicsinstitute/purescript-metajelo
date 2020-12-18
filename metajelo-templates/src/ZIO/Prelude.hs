@@ -63,10 +63,10 @@ headMay = foldr (const . Just) Nothing
 
 -- Attempt to handle any exception.
 -- Not entirely sure how "safe" this is
--- TODO: add to ZIO
+-- TODO: add to ZIO, or alteratively, do this (but with ZIO functions):
+-- TODO: xsd <- UIO.fromIO $ UIO.runEitherIO $ return $ parseText def $ TL.fromStrict xsdTxt
 mapZErrorOrExit :: ZIO r  SX.SomeException a -> ZIO r SomeNonPseudoException a
 mapZErrorOrExit m = mapZError mapZE m
-  -- (e -> SomeNonPseudoException) 
   where
     mapZE ::  SX.SomeException -> SomeNonPseudoException
     mapZE e = case SX.fromException e of
