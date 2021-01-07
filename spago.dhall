@@ -5,7 +5,9 @@ You can edit this file as you like.
 { name = "nix-purescript-example-project"
 , dependencies =
     [
-      "email-validate"
+      "datacite"
+    , "either-extra"
+    , "email-validate"
     , "enums"
     , "foreign-object"
     , "generics-rep"

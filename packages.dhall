@@ -124,7 +124,19 @@ let upstream =
 let overrides = { metajelo = ./spago.dhall as Location }
 
 let additions = {
-        enums =
+        , datacite =
+          { dependencies =
+            [ "effect", "functors", "generics-rep", "simple-json" ]
+          , repo = "https://github.com/CornellCAC/purescript-datacite.git"
+          , version = "8218b88174a8a72d30b53f5e7ead976fef30f0b4"
+          }
+        , either-extra =
+          { dependencies =
+            [ "either" ]
+          , repo = "https://github.com/bbarker/purescript-either-extra.git"
+          , version = "v0.0.3"
+          }
+        , enums =
           { dependencies =
             [ "control"
             , "either"

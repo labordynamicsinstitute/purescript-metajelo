@@ -73,7 +73,7 @@ mainTest = runTest do
     test "Metajelo Parsing" do
       parseEnv <- liftEffect $ MX.getDefaultParseEnv TD.metajeloXmlPrefixed
       record <- liftEffect $ MXR.readRecord parseEnv
-      assertNESEq "identifier0" record.identifier.id
+      assertNESEq "identifier0" record.identifier.identifier
       -- Assert.equal MJ.EISSN record.identifier.idType
       -- Assert.equal "2020-04-04" record.date
       -- Assert.equal "2019-05-04Z" record.lastModified
@@ -103,8 +103,8 @@ mainTest = runTest do
     test "Metajelo Parsing" do
       parseEnv <- liftEffect $ MX.getDefaultParseEnv TD.metajeloXml
       record <- liftEffect $ MXR.readRecord parseEnv
-      assertNESEq "OjlTjf" record.identifier.id
-      Assert.equal MJ.EISSN record.identifier.idType
+      assertNESEq "OjlTjf" record.identifier.identifier
+      Assert.equal MJ.EISSN record.identifier.identifierType
       dateNES <- liftEffect $ MXW.dateTimeToStr record.date
       Assert.assert ("record.date startsWith input date")
         $ startsWith "2020-04-04" (toString dateNES)
@@ -115,18 +115,22 @@ mainTest = runTest do
         $ startsWith "2019-05-04" (toString lastModNES)
       Assert.equal 2 (DAN.length record.relatedIdentifiers)
       relId1 <- pure $ unsafePartial fromJust $ record.relatedIdentifiers DAN.!! 1
-      assertNESEq "sm3AM1NbOSx" relId1.id
-      Assert.equal MJ.PMID  relId1.idType
-      Assert.equal MJ.IsNewVersionOf relId1.relType
+      assertNESEq "sm3AM1NbOSx" relId1.identifier
+      Assert.equal MJ.PMID  relId1.identifierType
+      Assert.equal MJ.IsNewVersionOf relId1.relationType
       prod0 <- pure $ unsafePartial $ fromJust $
         record.supplementaryProducts DAN.!! 0
       prod1 <- pure $ unsafePartial $ fromJust $
         record.supplementaryProducts DAN.!! 1
       prod0resId <- pure $ unsafePartial $ fromJust prod0.resourceID
-      Assert.equal MJ.IGSN prod0resId.idType
-      assertNESEq "bW8w2m5bzZ0WoKj7SBI_" prod0resId.id
-      assertNESEq "niBi6PpDgbhM3" prod0.basicMetadata.title
-      assertNESEq "cbK1" prod0.basicMetadata.creator
+      Assert.equal MJ.IGSN prod0resId.identifierType
+      assertNESEq "bW8w2m5bzZ0WoKj7SBI_" prod0resId.identifier
+      title0 <- pure $ unsafePartial $ fromJust $
+        prod0.basicMetadata.titles DAN.!! 0
+      assertNESEq "niBi6PpDgbhM3" title0
+      creator0 <- pure $ unsafePartial $ fromJust $
+        prod0.basicMetadata.creators DAN.!! 0
+      assertNESEq "cbK1" creator0
       Assert.equal (intToNat 2019) prod0.basicMetadata.publicationYear
       Assert.equal MJ.Event prod0.resourceType.generalType
       Assert.equal "cNMAxYjF0j0k" prod0.resourceType.description
@@ -136,8 +140,8 @@ mainTest = runTest do
       Assert.equal 2 (length prod0.format)
       prod0format1 <- pure $ unsafePartial fromJust $ prod0.format !! 1
       assertNESEq "Vf5ti6" prod0format1
-      Assert.equal MJ.ARK prod0.location.institutionID.idType
-      assertNESEq "institutionID0" prod0.location.institutionID.id
+      Assert.equal MJ.ARK prod0.location.institutionID.identifierType
+      assertNESEq "institutionID0" prod0.location.institutionID.identifier
       assertNESEq "pKhb" prod0.location.institutionName
       Assert.equal MJ.Commercial prod0.location.institutionType
       Assert.equal (Just "DHv5J4LquWfN42iu1a") $
@@ -167,25 +171,25 @@ mainTest = runTest do
     test "Metajelo Writing (individual fields)" do
       env <- liftEffect $ MX.getDefaultParseEnv TD.metajeloXml
       -- Testing identifier creation
-      idNew <- pure {id: fromStrUnsafe "FooBar", idType: MJ.PURL}
+      idNew <- pure {identifier: fromStrUnsafe "FooBar", identifierType: MJ.PURL}
       id0 <- liftEffect $ MXR.readIdentifier env
       liftEffect $ MXW.writeIdentifier env idNew
       id1 <- liftEffect $ MXR.readIdentifier env
       Assert.assert ("id0 == idNew: " <> (show id0) <> (show idNew )) $ id0 /= idNew
       Assert.assert ("id1 /= idNew: " <> (show id1) <> (show idNew )) $ (id1 == idNew)
-      -- Testing related idenitfier creation
+      -- Testing related identifier creation
       newRelId :: MJ.RelatedIdentifier <- pure {
-        id : fromStrUnsafe "Dog_Cat_Fox"
-      , idType : MJ.EAN13
-      , relType : MJ.IsPreviousVersionOf
+        identifier : fromStrUnsafe "Dog_Cat_Fox"
+      , identifierType : MJ.EAN13
+      , relationType : MJ.IsPreviousVersionOf
       }
       liftEffect $ MXW.writeRelIdentifiers env $ DAN.singleton newRelId
       relTestRec <- liftEffect $ MXR.readRecord env
       Assert.equal 3 (DAN.length relTestRec.relatedIdentifiers)
       relId3 <- pure $ unsafePartial fromJust $ relTestRec.relatedIdentifiers DAN.!! 2
-      Assert.equal newRelId.id relId3.id
-      Assert.equal newRelId.idType relId3.idType
-      Assert.equal newRelId.relType relId3.relType
+      Assert.equal newRelId.identifier relId3.identifier
+      Assert.equal newRelId.identifierType relId3.identifierType
+      Assert.equal newRelId.relationType relId3.relationType
       Assert.equal "true" (show true) -- for writing location.versioning
     for_ (FO.keys TD.docStringMap) (\k -> roundTripTest k)
 

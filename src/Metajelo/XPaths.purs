@@ -304,6 +304,13 @@ readNonEmptyString field str =
     Nothing -> Left $ "Empty string found for " <> field
     Just nes -> Right nes
 
+readNonEmptyArray :: forall a. String -> Array a -> Either String (NonEmptyArray a)
+readNonEmptyArray field arr =
+  let nesMay = NA.fromArray arr in
+  case nesMay of
+    Nothing -> Left $ "Empty array found for " <> field
+    Just nes -> Right nes
+
 rightOrThrow :: forall a. Either String a -> Effect a
 rightOrThrow ei = case ei of
   Right val -> pure val

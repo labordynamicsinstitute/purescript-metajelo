@@ -1,26 +1,31 @@
 -- | This module is derived from the schema of metajelo,
 -- | and more directly from the output of XsdToHaskell
 -- | being run on the schema.
-module Metajelo.Types where
+module Metajelo.Types (
+  module Exports
+, module Metajelo.Types
+) where
 
 import Prelude
 
-import Data.Array.NonEmpty                  (NonEmptyArray)
-import Data.DateTime                        (DateTime)
-import Data.Enum                            (class BoundedEnum, class Enum
-                                            , class SmallBounded, upFromIncluding)
-import Data.Maybe                           (Maybe)
-import Data.Natural                         (Natural)
-import Data.Generic.Rep                     (class Generic)
-import Data.Generic.Rep.Bounded             as GBounded
-import Data.Generic.Rep.Eq                  (genericEq)
-import Data.Generic.Rep.Enum                as GEnum
-import Data.Generic.Rep.Ord                 as GOrd
-import Data.Generic.Rep.Show                (genericShow)
-import Data.String.NonEmpty                 (NonEmptyString)
-import Data.Unfoldable1                     (class Unfoldable1)
-import Text.Email.Validate                  (EmailAddress)
-import Text.URL.Validate                    (URL)
+import Data.Array.NonEmpty (NonEmptyArray)
+import Data.DateTime (DateTime)
+import Data.Enum (class BoundedEnum, class Enum, class SmallBounded, upFromIncluding)
+import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Bounded as GBounded
+import Data.Generic.Rep.Enum as GEnum
+import Data.Generic.Rep.Eq (genericEq)
+import Data.Generic.Rep.Ord as GOrd
+import Data.Generic.Rep.Show (genericShow)
+import Data.Maybe (Maybe)
+import Data.Natural (Natural)
+import Data.String.NonEmpty (NonEmptyString)
+import Data.Unfoldable1 (class Unfoldable1)
+import DataCite.Types (Attributes, AttributesRows, Container, ContainerRows, Creator, CreatorRows, Data, DataRows, Relationships, RelationshipsRows, Resource, ResourceRows, SchemaVersion, Title, TitleRows, dataCiteVersion) as Exports
+import DataCite.Types.Common (Identifier, RelatedIdentifier, RelationType, ResourceTypeGeneral)
+import DataCite.Types.Common (class EnumReadForeign, AltId, BaseIdRows, Identifier, IdentifierType(..), RelatedIdentifier, RelatedIdentifierRows, RelationType(..), ResourceTypeGeneral(..), allIdentifierTypes, allRelationTypes, allResourceTypeGenerals, altIdToId, enumReadForeign, enumReadForeignImpl) as Exports
+import Text.Email.Validate (EmailAddress)
+import Text.URL.Validate (URL)
 
 -- | Stand in for xs:date
 type XsdDate = DateTime
@@ -41,61 +46,8 @@ type MetajeloRecordRows = (
 )
 type MetajeloRecord = Record MetajeloRecordRows
 
-type BaseIdRows otherField = (
-  id :: NonEmptyString
-, idType :: IdentifierType
-| otherField
-)
-type Identifier = Record (BaseIdRows())
 type ResourceID = Identifier
 type InstitutionID = Identifier
-
-type RelatedIdentifierRows = BaseIdRows (relType :: RelationType)
-type RelatedIdentifier = Record RelatedIdentifierRows
-
--- | The type of the Identifier and RelatedIdentifier.
-data IdentifierType
-  = ARK      -- Archival Resource Key
-  | ArXiv    -- arxiv.org
-  | Bibcode
-  | DOI
-  | EAN13
-  | EISSN
-  | Handle
-  | IGSN
-  | ISBN
-  | ISSN
-  | ISTC
-  | LISSN
-  | LSID
-  | PMID
-  | PURL
-  | UPC
-  | URL
-  | URN
-derive instance genericIdentifierType :: Generic IdentifierType _
-instance showIdentifierType :: Show IdentifierType where
-  show ArXiv = "arXiv"
-  show Bibcode = "bibcode"
-  show other = genericShow other
-instance eqIdentifierType :: Eq IdentifierType where
-  eq = genericEq
-instance ordIdentifierType :: Ord IdentifierType where
-  compare x y = GOrd.genericCompare x y
-instance boundedIdentifierType :: Bounded IdentifierType where
-  bottom = GBounded.genericBottom
-  top = GBounded.genericTop
-instance enumIdentifierType :: Enum IdentifierType where
-  pred = GEnum.genericPred
-  succ = GEnum.genericSucc
-instance boundedEnumIdentifierType :: BoundedEnum IdentifierType where
-  cardinality = GEnum.genericCardinality
-  toEnum = GEnum.genericToEnum
-  fromEnum = GEnum.genericFromEnum
-instance smallBoundedIdentifierType :: SmallBounded IdentifierType
-
-allIdentifierTypes :: forall u. Unfoldable1 u => u IdentifierType
-allIdentifierTypes = upFromIncluding bottom
 
 type SupplementaryProductRows = (
   basicMetadata :: BasicMetadata
@@ -110,8 +62,8 @@ type SupplementaryProduct = Record SupplementaryProductRows
 --derive instance eqSupplementaryProduct :: Eq SupplementaryProduct
 
 type BasicMetadataRows = (
-  title :: NonEmptyString
-, creator :: NonEmptyString
+  titles :: NonEmptyArray NonEmptyString
+, creators :: NonEmptyArray NonEmptyString
 , publicationYear :: Natural
 )
 type BasicMetadata = Record BasicMetadataRows
@@ -122,101 +74,12 @@ type ResourceTypeRows = (
 )
 type ResourceType = Record ResourceTypeRows
 
--- | The general type of a resource.
-data ResourceTypeGeneral =
-  Audiovisual
-  | Dataset
-  | Event
-  | Image
-  | InteractiveResource
-  | Model
-  | PhysicalObject
-  | ResourceCollection
-  | Service
-  | Software
-  | Sound
-  | Text
-  | Workflow
-  | Other
---derive instance EqResourceType :: Eq ResourceType
-derive instance genericResourceTypeGeneral :: Generic ResourceTypeGeneral _
-instance showResourceTypeGeneral :: Show ResourceTypeGeneral where
-  show = genericShow
-instance eqResourceTypeGeneral :: Eq ResourceTypeGeneral where
-  eq = genericEq
-instance ordResourceTypeGeneral :: Ord ResourceTypeGeneral where
-  compare x y = GOrd.genericCompare x y
-instance boundedResourceTypeGeneral :: Bounded ResourceTypeGeneral where
-  bottom = GBounded.genericBottom
-  top = GBounded.genericTop
-instance enumResourceTypeGeneral :: Enum ResourceTypeGeneral where
-  pred = GEnum.genericPred
-  succ = GEnum.genericSucc
-instance boundedEnumResourceTypeGeneral :: BoundedEnum ResourceTypeGeneral where
-  cardinality = GEnum.genericCardinality
-  toEnum = GEnum.genericToEnum
-  fromEnum = GEnum.genericFromEnum
-instance smallBoundedResourceTypeGeneral :: SmallBounded ResourceTypeGeneral
-
-allResourceTypeGenerals :: forall u. Unfoldable1 u => u ResourceTypeGeneral
-allResourceTypeGenerals = upFromIncluding bottom
-
 
 type ResourceMetadataSourceRows = (
   url :: URL
 , relationType :: RelationType
 )
 type ResourceMetadataSource = Record ResourceMetadataSourceRows
-
--- | Description of the relationship of the resource being
---   registered (A) and the related resource (B).
-data RelationType =
-  IsCitedBy
-  | Cites
-  | IsSupplementTo
-  | IsSupplementedBy
-  | IsContinuedBy
-  | Continues
-  | IsNewVersionOf
-  | IsPreviousVersionOf
-  | IsPartOf
-  | HasPart
-  | IsReferencedBy
-  | References
-  | IsDocumentedBy
-  | Documents
-  | IsCompiledBy
-  | Compiles
-  | IsVariantFormOf
-  | IsOriginalFormOf
-  | IsIdenticalTo
-  | HasMetadata
-  | IsMetadataFor
-  | Reviews
-  | IsReviewedBy
-  | IsDerivedFrom
-  | IsSourceOf
-derive instance genericRelationType :: Generic RelationType _
-instance showRelationType :: Show RelationType where
-  show = genericShow
-instance eqRelationType :: Eq RelationType where
-  eq = genericEq
-instance ordRelationType :: Ord RelationType where
-  compare x y = GOrd.genericCompare x y
-instance boundedRelationType :: Bounded RelationType where
-  bottom = GBounded.genericBottom
-  top = GBounded.genericTop
-instance enumRelationType :: Enum RelationType where
-  pred = GEnum.genericPred
-  succ = GEnum.genericSucc
-instance boundedEnumRelationType :: BoundedEnum RelationType where
-  cardinality = GEnum.genericCardinality
-  toEnum = GEnum.genericToEnum
-  fromEnum = GEnum.genericFromEnum
-instance smallBoundedRelationType :: SmallBounded RelationType
-
-allRelationTypes :: forall u. Unfoldable1 u => u RelationType
-allRelationTypes = upFromIncluding bottom
 
 type LocationRows = (
   institutionID :: InstitutionID
@@ -226,7 +89,7 @@ type LocationRows = (
 , institutionContact :: InstitutionContact
 , institutionSustainability :: InstitutionSustainability
 , institutionPolicies :: NonEmptyArray InstitutionPolicy
-  -- ^ set of possible policies for this location
+  -- | ^ set of possible policies for this location
 , versioning :: Boolean
 )
 type Location = Record LocationRows

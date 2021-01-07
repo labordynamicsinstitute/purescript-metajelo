@@ -1,47 +1,38 @@
 module Metajelo.XPaths.Read where
 
-import Prelude (bind, join, map, not, pure, (==), (#), ($), (<>), (<#>), (<=))
-
-import Control.Apply                     (lift2)
-import Data.Bounded                      (bottom)
-import Data.Array                        (head, filter)
-import Data.Array.NonEmpty               (NonEmptyArray)
-import Data.Array.NonEmpty               as NA
-import Data.Int                          (round)
-import Data.Either                       (Either(..))
-import Data.JSDate                       as JSDate
-import Data.Maybe                        (Maybe(..), fromMaybe)
-import Data.Natural                      (intToNat)
-import Data.String                       as S
-import Data.String                       (stripSuffix)
-import Data.String.NonEmpty              (NonEmptyString, toString)
-import Data.String.Pattern               (Pattern(..))
-import Data.String.Utils                 (startsWith)
-import Data.Traversable                  (sequence)
-import Data.XPath                        (at, xx, (/?))
-import Effect                            (Effect)
-import Effect.Exception                  (throw)
-import Global                            (readInt)
-
-import Metajelo.Types                    (BasicMetadata, Format, Identifier
-                                         , IdentifierType(..), InstitutionContact
-                                         , InstitutionContactType(..), InstitutionID
-                                         , InstitutionPolicy, InstitutionSustainability
-                                         , InstitutionType(..), Location, MetajeloRecord
-                                         , Policy(..), PolicyType(..), RelatedIdentifier
-                                         , RelationType(..), ResourceID
-                                         , ResourceMetadataSource, ResourceType
-                                         , ResourceTypeGeneral(..), SupplementaryProduct
-                                         , XsdDate)
 import Metajelo.XPaths
 
-import Text.Email.Validate               (validate)
-import Text.URL.Validate                 (URL, parsePublicURL)
-import Web.DOM.Document.XPath            as XP
+import Control.Apply (lift2)
+import Control.Bind ((=<<))
+import Data.Array (head, filter)
+import Data.Array.NonEmpty (NonEmptyArray)
+import Data.Array.NonEmpty as NA
+import Data.Bounded (bottom)
+import Data.Either (Either(..))
+import Data.Either.Extra (catLefts, catRights)
+import Data.Int (round)
+import Data.JSDate as JSDate
+import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Natural (intToNat)
+import Data.String (stripSuffix)
+import Data.String as S
+import Data.String.NonEmpty (NonEmptyString, toString)
+import Data.String.Pattern (Pattern(..))
+import Data.String.Utils (startsWith)
+import Data.Traversable (sequence, traverse)
+import Data.XPath (at, xx, (/?))
+import Effect (Effect)
+import Effect.Exception (throw)
+import Global (readInt)
+import Metajelo.Types (BasicMetadata, Format, Identifier, IdentifierType(..), InstitutionContact, InstitutionContactType(..), InstitutionID, InstitutionPolicy, InstitutionSustainability, InstitutionType(..), Location, MetajeloRecord, Policy(..), PolicyType(..), RelatedIdentifier, RelationType(..), ResourceID, ResourceMetadataSource, ResourceType, ResourceTypeGeneral(..), SupplementaryProduct, XsdDate)
+import Prelude (bind, join, map, not, pure, (==), (#), ($), (<>), (<#>), (<=))
+import Text.Email.Validate (validate)
+import Text.URL.Validate (URL, parsePublicURL)
+import Web.DOM.Document.XPath as XP
 import Web.DOM.Document.XPath.ResultType as RT
-import Web.DOM.Element                   (fromNode, localName)
-import Web.DOM.Node                      (Node, childNodes, nodeName)
-import Web.DOM.NodeList                  (toArray)
+import Web.DOM.Element (fromNode, localName)
+import Web.DOM.Node (Node, childNodes, nodeName)
+import Web.DOM.NodeList (toArray)
 
 readRecord :: ParseEnv -> Effect MetajeloRecord
 readRecord env = do
@@ -64,7 +55,7 @@ readIdentifier env = do
   recId <- rightOrThrow $ readNonEmptyString "Identifier" recIdStr
   idTypeStr <- env.xevalRoot.str $ idTypeRootAP
   idType <- rightOrThrow $ readIdentifierType $ idTypeStr
-  pure {id: recId, idType: idType}
+  pure {identifier: recId, identifierType: idType}
 
 readIdentifierType :: String -> Either String IdentifierType
 readIdentifierType "ARK" = pure ARK
@@ -139,7 +130,7 @@ readRelIdentifiers env = do
       recId <- getRelId nd
       idType <- getRelIdType nd
       relType <- getRelRelType nd
-      pure {id: recId, idType: idType, relType: relType}
+      pure {identifier: recId, identifierType: idType, relationType: relType}
 
 readRelationType :: String -> Either String RelationType
 readRelationType "IsCitedBy" = pure IsCitedBy
@@ -200,15 +191,13 @@ readSupplementaryProducts env = do
 readBasicMetadata :: ParseEnv -> Node -> Effect BasicMetadata
 readBasicMetadata env prodNode = do
   basicMetaNode <- unsafeSingleNodeValue env prodNode basicMetaXpath
-  titleStr <- getTitle basicMetaNode
-  creatorStr <- getCreator basicMetaNode
-  title <- rightOrThrow $ readNonEmptyString "Title" titleStr
-  creator <- rightOrThrow $ readNonEmptyString "Creator" creatorStr
+  titles <- rightOrThrow =<< readNEStringArray env titleP basicMetaNode
+  creators <- rightOrThrow =<< readNEStringArray env creatorP basicMetaNode
   pubYear <- getPublicationYear basicMetaNode
-  pure {title: title, creator: creator, publicationYear: pubYear}
+  pure {titles: titles, creators: creators, publicationYear: pubYear}
   where
     basicMetaXpath = xx basicMetaP
-    getTitle nd = env.xeval.str nd $ xx titleP
+    -- getTitle nd = env.xeval.str nd $ xx titleP
     getCreator nd = env.xeval.str nd $ xx creatorP
     getPublicationYear nd = do
       pyStr <- env.xeval.str nd $ xx pubYearP
@@ -235,7 +224,7 @@ readResourceID env prodNode = do
     combineIdBits idMay idTypeMay = sequence $ do
       idEff <- idMay
       idTypeEff <- idTypeMay
-      pure $ lift2 (\i t -> {id: i, idType: t}) idEff idTypeEff
+      pure $ lift2 (\i t -> {identifier: i, identifierType: t}) idEff idTypeEff
 
 readResourceType :: ParseEnv -> Node -> Effect ResourceType
 readResourceType env prodNode = do
@@ -273,7 +262,7 @@ readFormats env prodNode = do
     (xx formatCP /? formatP)
     RT.ordered_node_snapshot_type
   formatNodes <- XP.snapshot formatsRes
-  sequence $ map getFormat formatNodes
+  traverse getFormat formatNodes
   where
     getFormat:: Node -> Effect Format
     getFormat nd = do
@@ -303,7 +292,7 @@ readInstitutionID env locNode = do
   instIdNode <- unsafeSingleNodeValue env locNode $ xx instIdP
   instId <- getInstId instIdNode
   instIdType <- getInstIdType instIdNode
-  pure {id: instId, idType: instIdType}
+  pure {identifier: instId, identifierType: instIdType}
   where
     getInstId :: Node -> Effect NonEmptyString
     getInstId nd = do
@@ -342,7 +331,7 @@ readLocation env prodNode = do
     getSuperOrg :: Node -> Effect (Maybe NonEmptyString)
     getSuperOrg locNode = do
       suprOrgNodeMay <- env.xeval.nodeMay locNode (xx superOrgNameP)
-      sequence $ map (\nd -> sOrgFromStr $ env.xeval.str nd ".") suprOrgNodeMay
+      traverse (\nd -> sOrgFromStr $ env.xeval.str nd ".") suprOrgNodeMay
     sOrgFromStr :: Effect String -> Effect NonEmptyString
     sOrgFromStr efStr = do
       str <- efStr
@@ -453,3 +442,14 @@ getUrl env xpath nd = do
   case parsePublicURL urlStr of
     Left errMsg -> throw errMsg
     Right url -> pure url
+
+readNEStringArray :: ParseEnv -> String -> Node 
+  -> Effect (Either String (NonEmptyArray NonEmptyString))
+readNEStringArray env fieldP node = do
+  fieldsRes <- env.xeval.any node (xx fieldP) RT.ordered_node_snapshot_type
+  fieldNodes <- XP.snapshot fieldsRes
+  fieldStrs <- traverse (\nd -> env.xeval.str nd ".") fieldNodes
+  let fieldEis = map (\ts -> readNonEmptyString fieldP ts) fieldStrs
+  let fieldErrs = catLefts fieldEis
+  let fieldsArr = catRights fieldEis
+  pure $ readNonEmptyArray (fieldP <> "s") fieldsArr

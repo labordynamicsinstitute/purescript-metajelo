@@ -88,8 +88,8 @@ writeInstitutionID env prodNd instId = do
 
 writeIdContents :: String -> DocWriter Identifier
 writeIdContents atName env parNode id = do
-  setTextContent (toStr id.id) parNode
-  writeIdentifierType atName env parNode id.idType
+  setTextContent (toStr id.identifier) parNode
+  writeIdentifierType atName env parNode id.identifierType
 
 writeIdentifierType :: String -> DocWriter IdentifierType
 writeIdentifierType atName env idNode idType = do
@@ -119,9 +119,9 @@ writeRelIdentifiers :: DocWriterRoot (NonEmptyArray RelatedIdentifier)
 writeRelIdentifiers env relIds = for_ relIds (\relId -> do
   el <- createAppendRecEle env env.recNode relIdP
   let nd = toNode el
-  setTextContent (toStr relId.id) nd
-  setAttribute relIdTypeAT (show relId.idType) el
-  setAttribute relTypeAT (show relId.relType) el
+  setTextContent (toStr relId.identifier) nd
+  setAttribute relIdTypeAT (show relId.identifierType) el
+  setAttribute relTypeAT (show relId.relationType) el
 )
 
 writeSupplementaryProducts :: DocWriterRoot (NonEmptyArray SupplementaryProduct)
@@ -142,12 +142,18 @@ writeProduct env prod = do
 writeBasicMetadata :: DocWriter BasicMetadata
 writeBasicMetadata env prodNd bm = do
   bmNd <- map toNode $ createAppendRecEle env prodNd basicMetaP
-  titleNd <- map toNode $ createAppendRecEle env bmNd titleP
-  setTextContent (toStr bm.title) titleNd
-  creatorNd <- map toNode $ createAppendRecEle env bmNd creatorP
-  setTextContent (toStr bm.creator) creatorNd
+  writeTitles env bmNd bm.titles
+  writeCreators env bmNd bm.creators
   pubYearNd <- map toNode $ createAppendRecEle env bmNd pubYearP
   setTextContent (show bm.publicationYear) pubYearNd
+
+writeTitles :: DocWriter (NonEmptyArray NonEmptyString)
+writeTitles env mdNode titles = do
+  for_ titles (\t -> writeSimpleNode titleP env mdNode t)
+
+writeCreators :: DocWriter (NonEmptyArray NonEmptyString)
+writeCreators env mdNode creators = do
+  for_ creators (\c -> writeSimpleNode creatorP env mdNode c)
 
 writeResourceType :: DocWriter ResourceType
 writeResourceType env prodNd resType = do
