@@ -128,13 +128,13 @@ let additions = {
           { dependencies =
             [ "effect", "functors", "generics-rep", "simple-json" ]
           , repo = "https://github.com/CornellCAC/purescript-datacite.git"
-          , version = "8218b88174a8a72d30b53f5e7ead976fef30f0b4"
+          , version = "b54176303ae818ec40298d69cea6d7752c11ad14"
           }
         , either-extra =
           { dependencies =
             [ "either" ]
           , repo = "https://github.com/bbarker/purescript-either-extra.git"
-          , version = "v0.0.3"
+          , version = "v0.0.4"
           }
         , enums =
           { dependencies =
